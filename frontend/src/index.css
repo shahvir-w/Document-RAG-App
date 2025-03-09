@@ -16,11 +16,13 @@
   .bg-radial-glow {
     background-image: radial-gradient(
       circle at center,
-      rgba(59, 130, 246, 0.15) 0%,
-      rgba(147, 51, 234, 0.1) 25%,
+      rgba(3, 3, 88, 0.15) 0%,
+      rgba(4, 4, 41, 0.15) 25%,
       transparent 70%
     );
   }
+
+  
 
   .custom-scrollbar {
     scrollbar-width: thin;
