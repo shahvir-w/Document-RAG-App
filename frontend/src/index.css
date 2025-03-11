@@ -17,16 +17,40 @@
     background-image: radial-gradient(
       circle at center,
       rgba(3, 3, 88, 0.15) 0%,
-      rgba(4, 4, 41, 0.15) 25%,
+      rgba(1, 1, 61, 0.15) 25%,
       transparent 70%
     );
   }
 
-  
+  .custom-color {
+    color: rgba(150, 173, 255);
+  }
+
+  .custom-border {
+    border-bottom: 2px solid rgba(150, 178, 240, 0.7);
+  }
+
+  .full-border {
+    border: 1px solid rgba(150, 173, 255, 0.7);
+  }
+
+  .custom-background {
+    background: rgba(150, 173, 255, 0.5);
+  }
+
+  .chat-background1 {
+    background: linear-gradient(135deg, rgba(59, 72, 119, 0.5), rgba(181, 178, 240, 0.5)); /* Gradient from one light color to another */
+    box-shadow: 0 0 7px rgba(150, 173, 255, 0.7); /* Glow effect around the element */
+  }
+
+  .chat-background2 {
+    background: linear-gradient(135deg, rgba(73, 73, 73, 0.5), rgba(30, 30, 30, 0.5)); /* Gradient from one light color to another */
+    box-shadow: 0 0 7px rgba(119, 124, 145, 0.7); /* Glow effect around the element */
+  }
 
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(59, 130, 246, 0.5) transparent;
+    scrollbar-color: rgba(150, 173, 255, 0.5) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {

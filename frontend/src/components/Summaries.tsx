@@ -2,10 +2,10 @@ import { Download } from "lucide-react";
 
 function Summaries() {
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="h-full overflow-auto p-4 bg-zinc-950 text-zinc-300 custom-scrollbar">
       {/* Save Summary Button */}
       <div className="flex justify-center mb-4">
-        <button className="border rounded px-2 py-1 text-sm flex items-center gap-1 hover:bg-gray-100">
+        <button className="border border-zinc-700 rounded px-2 py-1 text-sm flex items-center gap-1 hover:bg-zinc-800 transition-colors">
           <Download className="h-4 w-4" />
           Save Summary
         </button>
@@ -13,10 +13,8 @@ function Summaries() {
 
       <div className="space-y-4 text-base">
         <p>
-          The article provides a comprehensive review of Explainable Artificial Intelligence (
-          <strong>XAI</strong>) methods for <strong>cyber security</strong> applications. It emphasizes the
-          deficiencies of <strong>transparency</strong> and <strong>interpretability</strong> in existing AI
-          techniques and the importance of incorporating <strong>XAI</strong> to create more explainable
+          The article provides a comprehensive review of Explainable Artificial Intelligence methods for cyber security applications. It emphasizes the
+          deficiencies of transparency and interpretability in existing AI techniques and the importance of incorporating XAI to create more explainable
           models while maintaining high accuracy. The article introduces a clear roadmap.
         </p>
         <p>
