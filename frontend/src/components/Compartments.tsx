@@ -1,13 +1,13 @@
 import { Download } from "lucide-react";
 
-function Summaries() {
+function Compartments() {
   return (
     <div className="h-full overflow-auto p-4 bg-zinc-950 text-zinc-300 custom-scrollbar">
       {/* Save Summary Button */}
       <div className="flex justify-center mb-4">
         <button className="border border-zinc-700 rounded px-2 py-1 text-sm flex items-center gap-1 hover:bg-zinc-800 transition-colors">
           <Download className="h-4 w-4" />
-          Save Summary
+          Save Compartments
         </button>
       </div>
 
@@ -35,4 +35,4 @@ function Summaries() {
   );
 }
 
-export default Summaries;
+export default Compartments;

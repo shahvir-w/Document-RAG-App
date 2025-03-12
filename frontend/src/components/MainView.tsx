@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Upload } from "lucide-react";
 import DocumentView from "./DocumentView";
-import Summaries from "./Summaries";
+import Compartments from "./Compartments";
 import Chat from "./Chat";
 
 function MainView() {
-  const [activeTab, setActiveTab] = useState("summaries");
+  const [activeTab, setActiveTab] = useState("compartments");
   const documentTitle = "Explainable Artificial Intelligence Applications in Cyber Security: State-of-the-Art in Research";
   
   return (
@@ -47,11 +47,11 @@ function MainView() {
             <div className="w-full flex justify-center border-b border-zinc-700">
               <button
                 className={`px-4 py-2 ${
-                  activeTab === "summaries" ? "border-b-2 custom-border -mb-px custom-color" : "text-zinc-400 hover:text-zinc-200"
+                  activeTab === "compartments" ? "border-b-2 custom-border -mb-px custom-color" : "text-zinc-400 hover:text-zinc-200"
                 } transition-colors`}
-                onClick={() => setActiveTab("summaries")}
+                onClick={() => setActiveTab("compartments")}
               >
-                Summaries
+                Compartments
               </button>
               <button
                 className={`px-4 py-2 ${
@@ -64,7 +64,7 @@ function MainView() {
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === "summaries" && <Summaries />}
+            {activeTab === "compartments" && <Compartments />}
             {activeTab === "chat" && <Chat />}
           </div>
         </div>
