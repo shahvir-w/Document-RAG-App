@@ -1,10 +1,9 @@
-import argparse
 import os
 import shutil
-from langchain.document_loaders.pdf import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader, UnstructuredMarkdownLoader
+from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
-from langchain.vectorstores import Chroma
 from dotenv import load_dotenv
 import openai
 from langchain_openai import OpenAIEmbeddings
@@ -14,19 +13,24 @@ load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
-CHROMA_PATH = "chroma"
-DATA_PATH = "data"
+CHROMA_PATH = "app/chromaRAG"
+DATA_PATH = "app/data"
 
 
 def main():
     clear_database()
-    documents = load_documents()
+    documents = load_documents('pdf')
     chunks = split_documents(documents)
     add_to_chroma(chunks)
 
 
-def load_documents():
-    document_loader = PyPDFDirectoryLoader(DATA_PATH)
+def load_documents(file_type: str):
+    if file_type == 'pdf':
+        document_loader = PyPDFDirectoryLoader(path=DATA_PATH, mode="single")
+    elif file_type == 'text':
+        document_loader = TextLoader(path=DATA_PATH)
+    elif file_type == 'markdown':
+        document_loader = UnstructuredMarkdownLoader(path=DATA_PATH, mode="single")
     return document_loader.load()
 
 
