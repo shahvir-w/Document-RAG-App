@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -11,11 +11,11 @@ const api = axios.create({
 
 export const uploadDocument = async (file: File, onProgressUpdate: (progress: number) => void) => {
     const formData = new FormData();
-    formData.append('document', file);
+    formData.append('file', file);
     
     try {
       // First phase: Track upload progress
-      const response = await api.post('/documents/upload', formData, {
+      const response = await api.post('/document/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -29,7 +29,9 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
       });
       
       const documentId = response.data.documentId;
-      
+      console.log(documentId);
+      /*
+
       // Second phase: Track processing progress with SSE
       const eventSource = new EventSource(`${API_BASE_URL}/documents/${documentId}/progress`);
       
@@ -51,7 +53,8 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
       eventSource.addEventListener('error', () => {
         eventSource.close();
       });
-      
+      */
+
       return response.data;
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -62,9 +65,11 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
 export const uploadText = async (textContent: string, onProgressUpdate: (progress: number) => void) => {
     try {
       // Initial call to start processing
-      const response = await api.post('/documents/upload-text', { content: textContent });
+      const response = await api.post('/document/upload-text', { content: textContent });
       const documentId = response.data.documentId;
+      console.log(documentId);
       
+      /*
       // Set up SSE connection
       const eventSource = new EventSource(`${API_BASE_URL}/documents/${documentId}/progress`);
       
@@ -83,7 +88,7 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
       eventSource.addEventListener('error', () => {
         eventSource.close();
       });
-      
+      */
       return response.data;
     } catch (error) {
       console.error('Error uploading text:', error);
