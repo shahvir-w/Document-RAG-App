@@ -13,7 +13,7 @@ load_dotenv()
 openai.api_key = os.environ['OPENAI_API_KEY']
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 
-CHROMA_PATH = "app/chromaRAG"
+CHROMA_PATH = "app/chroma"
 DATA_PATH = "app/data"
 
 
