@@ -14,6 +14,7 @@ function App() {
   const [activeDocument, setActiveDocument] = useState<DocumentData | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingProgress, setProcessingProgress] = useState<number>(0);
+  const [processingMessage, setProcessingMessage] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   
   const isValidFileType = (file: File): boolean => {
@@ -38,24 +39,25 @@ function App() {
     
     setIsProcessing(true);
     setProcessingProgress(0);
+    setProcessingMessage("");
     setError(null);
     
     try {
-      const response = await uploadDocument(file, (progress) => {
+      const response: any = await uploadDocument(file, (progress, message) => {
         setProcessingProgress(progress);
+        if (message) setProcessingMessage(message);
       });
       
-      setActiveDocument({
-        id: response.documentId,
-        name: file.name,
-        type: file.type,
-      });
+      if (response) {
+        setActiveDocument({
+          id: response.documentId,
+          name: file.name,
+          type: file.type,
+        });
+      }
     } catch (err) {
       setError("Failed to process the document. Please try again.");
       console.error(err);
-    } finally {
-      setIsProcessing(false);
-      setProcessingProgress(0);
     }
   };
   
@@ -88,7 +90,7 @@ function App() {
   };
   
 
-  return activeDocument ? (
+  return processingProgress === 100 ? (
     <div className="min-h-screen relative overflow-hidden">
       <MainView/>
     </div>
@@ -98,6 +100,7 @@ function App() {
       onTextSubmit={handleTextSubmit}
       isProcessing={isProcessing}
       uploadProgress={processingProgress}
+      processingMessage={processingMessage}
       error={error}
     />
   );

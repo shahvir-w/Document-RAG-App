@@ -7,6 +7,7 @@ type LandingPageProps = {
   isProcessing: boolean;
   uploadProgress: number;
   error: string | null;
+  processingMessage: string;
 };
 
 function LandingPage({ 
@@ -14,12 +15,14 @@ function LandingPage({
   onTextSubmit, 
   isProcessing, 
   uploadProgress, 
-  error 
+  error, 
+  processingMessage 
 }: LandingPageProps) {
   const [showTextInput, setShowTextInput] = useState(false);
   const [textContent, setTextContent] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isTextSubmitted, setIsTextSubmitted] = useState(false);
 
   
   const validateAndUploadFile = (file: File) => {
@@ -65,8 +68,9 @@ function LandingPage({
   
   const handleTextSubmit = () => {
     if (textContent.trim()) {
+      setShowTextInput(false);
+      setIsTextSubmitted(true);
       onTextSubmit(textContent);
-      // Don't close the modal - it will close when processing completes
     }
   };
 
@@ -142,22 +146,6 @@ function LandingPage({
                 disabled={isProcessing}
               />
             </label>
-            
-            {/* Progress bar for file processing */}
-            {isProcessing && (
-              <div className="w-96 mt-4">
-                <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-zinc-500 mt-1">
-                  <span>Analyzing content</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Text input toggle button */}
@@ -169,7 +157,25 @@ function LandingPage({
             <Clipboard className="w-5 h-5" />
             <span>Paste Text Content</span>
           </button>
+          
         </div>
+
+
+        {/* Progress bar section */}
+        {(isProcessing && (isTextSubmitted || !showTextInput)) && (
+            <div className="w-full max-w-lg mt-6"> {/* Changed from w-96 to w-full max-w-lg */}
+              <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-400 from-0% via-indigo-500 via-20% via-blue-600 via-40% via-sky-500 via-60% via-teal-400 via-80% to-purple-500 to-100% animate-pulse transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-sm text-zinc-400 mt-2">
+                <span>{processingMessage || "Processing..."}</span>
+                <span>{uploadProgress}%</span>
+              </div>
+            </div>
+          )}
 
         {/* Text input modal */}
         {showTextInput && (
@@ -192,22 +198,6 @@ function LandingPage({
                 className="w-full h-64 bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-4 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 hover:border-zinc-500 transition-all duration-300 resize-none shadow-inner"
                 disabled={isProcessing}
               />
-              
-              {/* Progress bar for text processing */}
-              {isProcessing && (
-                <div className="mt-4">
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300 ease-out"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-zinc-500 mt-1">
-                    <span>Analyzing content</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                </div>
-              )}
               
               <div className="flex justify-end mt-6 gap-4">
                 <button
