@@ -115,7 +115,7 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
   } catch (error: any) {
     console.error('Error uploading document:', error);
     if (error.code === 'ECONNABORTED') {
-      onProgressUpdate(0, "Server took too long to respond. Please try again");
+      onProgressUpdate(0, "Server took too long to respond. Please try again.");
     } else {
       onProgressUpdate(0, "Upload failed");
     }

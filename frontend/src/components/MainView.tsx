@@ -5,9 +5,11 @@ import Compartments from "./Compartments";
 import Chat from "./Chat";
 import { ParsedSummary } from "../services/summaryParse";
 
-function MainView(props: { summary: ParsedSummary, text: string, title: string }) {
+function MainView(props: { summary: ParsedSummary, text: string, title: string, pdfUrl?: string }) {
   const [activeTab, setActiveTab] = useState("compartments");
   const documentTitle = props.title;
+
+  console.log(props.summary);
   
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200">
@@ -39,7 +41,7 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string }
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Document Section (Left - 40% width) */}
-        <DocumentView text={props.text}/>
+        <DocumentView text={props.text} pdfUrl={props.pdfUrl}/>
         
         {/* Navigation Section (Right - 60% width) */}
         <div className="w-3/5 flex flex-col overflow-hidden border-l border-zinc-700">
@@ -65,7 +67,7 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string }
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === "compartments" && <Compartments summary={props.summary} title={documentTitle}/>}
+            {activeTab === "compartments" && <Compartments summary={props.summary}/>}
             {activeTab === "chat" && <Chat />}
           </div>
         </div>

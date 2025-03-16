@@ -10,18 +10,59 @@ export interface SubCompartment {
 
 export type ParsedSummary = Compartment[];
 
+function parseMarkdownText(text: string): string {
+  // Handle bold text (both ** and __ syntax)
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
+  
+  // Handle bullet points
+  // Split into lines, process each line, and rejoin
+  const lines = text.split('\n');
+  const processedLines = lines.map(line => {
+    // Handle different types of bullet points
+    const bulletPointRegex = /^[-*•]\s+(.+)$/;
+    const match = line.trim().match(bulletPointRegex);
+    if (match) {
+      return `<li>${match[1]}</li>`;
+    }
+    return line;
+  });
+  
+  // Wrap consecutive <li> elements in <ul>
+  let inList = false;
+  const wrappedLines = [];
+  
+  for (const line of processedLines) {
+    if (line.startsWith('<li>')) {
+      if (!inList) {
+        wrappedLines.push('<ul>');
+        inList = true;
+      }
+      wrappedLines.push(line);
+    } else {
+      if (inList) {
+        wrappedLines.push('</ul>');
+        inList = false;
+      }
+      wrappedLines.push(line);
+    }
+  }
+  
+  if (inList) {
+    wrappedLines.push('</ul>');
+  }
+  
+  return wrappedLines.join('\n');
+}
 
 export function parseSummary(markdownSummary: string): ParsedSummary {
-  // Initialize the result object
-  const result: ParsedSummary = []
+  const result: ParsedSummary = [];
   if (markdownSummary === "") {
     return result;
   }
   
-  // Split the markdown by lines
   const lines = markdownSummary.split('\n').filter(line => line.trim() !== '');
-
-  // Process the rest of the markdown
+  
   let currentCompartment: Compartment | null = null;
   let currentSubCompartments: SubCompartment[] = [];
   let currentSubCompartment: SubCompartment | null = null;
@@ -29,23 +70,45 @@ export function parseSummary(markdownSummary: string): ParsedSummary {
   let collectingMainContent = false;
   let mainCompartmentContent = '';
 
+  // Function to save current subcompartment
+  const saveCurrentSubCompartment = () => {
+    if (currentSubCompartment) {
+      currentSubCompartments.push({
+        ...currentSubCompartment,
+        content: parseMarkdownText(currentSubCompartment.content.trim())
+      });
+      currentSubCompartment = null;
+    }
+  };
+
+  // Function to save current compartment
+  const saveCurrentCompartment = () => {
+    if (currentCompartment) {
+      // Save any pending subcompartment
+      saveCurrentSubCompartment();
+      
+      if (currentSubCompartments.length > 0) {
+        currentCompartment.content = currentSubCompartments;
+      } else if (mainCompartmentContent.trim()) {
+        currentCompartment.content = parseMarkdownText(mainCompartmentContent.trim());
+      } else {
+        currentCompartment.content = "No content provided";
+      }
+      result.push(currentCompartment);
+      
+      // Reset collections
+      currentSubCompartments = [];
+      mainCompartmentContent = '';
+    }
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    // Check for main compartment (# heading)
     if (line.startsWith('# ')) {
-      // Save previous compartment if it exists
-      if (currentCompartment) {
-        if (currentSubCompartments.length > 0) {
-          currentCompartment.content = [...currentSubCompartments];
-        } else if (mainCompartmentContent.trim()) {
-          currentCompartment.content = mainCompartmentContent.trim();
-        }
-        result.push(currentCompartment);
-        currentSubCompartments = [];
-        mainCompartmentContent = '';
-      }
-
+      // Save previous compartment before starting new one
+      saveCurrentCompartment();
+      
       // Create new compartment
       currentCompartment = {
         heading: line.replace('# ', '').trim(),
@@ -54,101 +117,36 @@ export function parseSummary(markdownSummary: string): ParsedSummary {
       collectingMainContent = true;
       collectingSubContent = false;
     }
-    // Check for subcompartment (## heading)
     else if (line.startsWith('## ')) {
-      // Mark that the main compartment contains subcompartments
-      if (collectingMainContent) {
-        collectingMainContent = false;
-      }
-
-      // Save previous subcompartment if it exists
-      if (currentSubCompartment) {
-        currentSubCompartments.push(currentSubCompartment);
-      }
+      // Save previous subcompartment if exists
+      saveCurrentSubCompartment();
+      
+      // We found a subcompartment, stop collecting main content
+      collectingMainContent = false;
+      collectingSubContent = true;
 
       // Create new subcompartment
       currentSubCompartment = {
         heading: line.replace('## ', '').trim(),
         content: ''
       };
-      collectingSubContent = true;
     }
-    // Content for subcompartment
     else if (collectingSubContent && currentSubCompartment) {
       currentSubCompartment.content += line + '\n';
     }
-    // Content for main compartment
     else if (collectingMainContent && currentCompartment) {
       mainCompartmentContent += line + '\n';
     }
   }
 
-  // Handle the last compartment and subcompartment
-  if (currentSubCompartment) {
-    currentSubCompartments.push(currentSubCompartment);
-  }
+  // Save final compartment and any pending subcompartments
+  saveCurrentCompartment();
 
-  if (currentCompartment) {
-    if (currentSubCompartments.length > 0) {
-      currentCompartment.content = [...currentSubCompartments];
-    } else if (mainCompartmentContent.trim()) {
-      currentCompartment.content = mainCompartmentContent.trim();
-    }
-    result.push(currentCompartment);
-  }
-
-  return result;
-}
-
-/**
- * Example usage of the parseSummary function
- */
-export function example() {
-  const sampleMarkdown = `
-Title: Understanding React Hooks
-
-# Introduction
-React Hooks are a feature introduced in React 16.8 that allow you to use state and other React features without writing a class.
-
-## Definition
-Hooks are functions that let you "hook into" React state and lifecycle features from function components.
-
-# Core Hooks
-React provides several built-in Hooks.
-
-## useState
-The useState Hook lets you add React state to function components.
-
-## useEffect
-The useEffect Hook lets you perform side effects in function components.
-`;
-
-  const parsed = parseSummary(sampleMarkdown);
-  console.log(parsed);
-  /* Output would be:
-    [
-      {
-        heading: "Introduction",
-        content: [
-          {
-            heading: "Definition",
-            content: "Hooks are functions that let you \"hook into\" React state and lifecycle features from function components.\n"
-          }
-        ]
-      },
-      {
-        heading: "Core Hooks",
-        content: [
-          {
-            heading: "useState",
-            content: "The useState Hook lets you add React state to function components.\n"
-          },
-          {
-            heading: "useEffect",
-            content: "The useEffect Hook lets you perform side effects in function components.\n"
-          }
-        ]
-      }
-    ]
-  */
+  // Post-processing: Ensure no empty compartments
+  return result.map(compartment => ({
+    ...compartment,
+    content: Array.isArray(compartment.content) && compartment.content.length === 0
+      ? "No content provided"
+      : compartment.content
+  }));
 }

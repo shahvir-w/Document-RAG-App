@@ -48,6 +48,12 @@
     box-shadow: 0 0 7px rgba(119, 124, 145, 0.7); /* Glow effect around the element */
   }
 
+  .comp-background {
+    background: linear-gradient(180deg, rgba(27, 33, 52, 0.5), rgba(35, 35, 37, 0.3)); /* Gradient from one light color to another */
+  }
+
+
+
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(150, 173, 255, 0.5) transparent;

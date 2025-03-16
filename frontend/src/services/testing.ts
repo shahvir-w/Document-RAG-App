@@ -1,49 +1,83 @@
 export const summary = `# Abstract
-This document discusses a short communication published in Epilepsy Research, focusing on the efficacy and safety of perampanel, an antiepileptic drug, specifically in elderly patients aged 65 years and older. The analysis is based on data from three phase III clinical trials and aims to address the lack of clinical data regarding antiepileptic drugs in the elderly population.
+This document discusses a meta-analysis published in the Iranian Journal of Public Health, which evaluates the efficacy and side effects of two antiepileptic drugs: levetiracetam (LEV) and carbamazepine (CBZ). The study aims to provide a comparative analysis of these medications in the treatment of epilepsy, a neurological disorder affecting around 70 million people worldwide.
 
-# Introduction
-- **Perampanel Overview**: Perampanel is a selective, orally active, noncompetitive AMPA receptor antagonist that has shown efficacy in treating partial seizures.
-- **Elderly Population**: The elderly represent a growing segment of the epilepsy population, yet they are often underrepresented in clinical studies, leading to a gap in understanding the efficacy and safety of antiepileptic drugs in this demographic.
+# Background on Epilepsy
+- **Prevalence**: Epilepsy is a widespread neurological condition with varying incidence rates across different economic regions. Approximately 85% of patients do not receive adequate treatment, despite many having manageable forms of the disorder.
 
-# Methods
-## Study Design
-- **Phase III Studies**: The analysis included data from three multinational, randomized, double-blind, placebo-controlled studies involving a 6-week baseline, a 19-week double-blind phase, and a 4-week follow-up.
-- **Eligibility Criteria**: Participants aged 12 years and older with uncontrolled partial seizures were included, with a focus on those aged 65 and older for this analysis.
+# Drugs Compared
+## Levetiracetam (LEV)
+A newer antiepileptic drug recognized for its broad-spectrum efficacy and favorable safety profile.
+## Carbamazepine (CBZ)
+A traditional antiepileptic medication that is widely used but has a narrower therapeutic index and is prone to significant drug interactions.
 
-## Efficacy and Safety Endpoints
-- **Primary Endpoint**: Median percent change in seizure frequency over 28 days during the double-blind period.
-- **Secondary Endpoint**: The 50% responder rate, defined as the percentage of patients achieving a 50% reduction in seizure frequency.
-- **Safety Assessment**: Treatment-emergent adverse events (TEAEs) were recorded to evaluate safety.
+# Study Design
+- The authors conducted a systematic review of randomized controlled trials (RCTs) comparing LEV and CBZ, focusing on outcomes such as seizure-free intervals, withdrawal rates due to adverse events, and various side effects.
+
+# Methodology
+- The literature search included databases like PubMed and EMBASE, with studies selected based on specific inclusion and exclusion criteria. Data extraction and quality assessment were performed by two independent authors.
 
 # Results
-## Baseline Population Characteristics
-- **Elderly Group**: Comprised 1.9% of the total study population, with 28 subjects aged 65 years and older.
-- **Seizure Types**: Complex partial seizures were the most common in both elderly (89.3%) and adult (85.5%) subgroups.
+- **Study Inclusion**: Three RCTs were included, involving 1,696 patients. The analysis indicated similar rates of seizure freedom between LEV and CBZ. However, LEV was associated with a higher incidence of depression, while CBZ was linked to more frequent rashes.
+- **Adverse Events**: The study assessed various adverse events, including headache, fatigue, and gastrointestinal issues, with mixed results regarding their occurrence between the two drugs.
 
-## Efficacy Outcomes
-- **Response to Treatment**: Elderly subjects showed a median percent reduction in seizure frequency of 16.9% and 12.5% for the 8 mg and 12 mg doses, respectively, compared to 6.8% for placebo.
-- **Responder Rates**: The 50% responder rates were 22.2% and 42.9% for the 8 mg and 12 mg groups, respectively, versus 25% for placebo.
+# Limitations
+- The authors acknowledged that the limited number of studies and patients may affect the reliability of the results. They also pointed out challenges in assessing psychological and psychiatric adverse effects due to their subjective nature.
 
-## Safety Outcomes
-- **TEAE Incidence**: Similar rates of TEAEs were observed between elderly (85.0%) and adult (77.4%) subgroups.
-- **Common Adverse Events**: Dizziness, somnolence, fatigue, irritability, and falls were reported more frequently in the elderly group compared to adults.
+# Conclusion
+- The meta-analysis suggests that both LEV and CBZ are effective in managing epilepsy, but they differ in their side effect profiles. The authors advocate for more extensive studies to provide clearer insights into the comparative efficacy and safety of these medications.
 
-# Discussion
-- **Elderly Susceptibility**: The elderly population is more susceptible to adverse effects due to age-related conditions and polypharmacy.
-- **Efficacy Comparison**: The efficacy of perampanel in elderly patients was comparable to that in younger adults, although the elderly experienced a higher incidence of falls and related adverse events.
-- **Cautious Titration**: The findings suggest a need for careful titration of perampanel in elderly patients, particularly at higher doses.
+# Keywords
+- Efficacy, Levetiracetam, Carbamazepine, Epilepsy, Meta-analysis.
 
-# Conclusions
-The analysis indicates that perampanel is effective in reducing seizure frequency in elderly patients aged 65 years and older, with a safety profile largely consistent with that of younger adults. However, the increased risk of falls and other adverse events necessitates cautious dosing strategies in this population.
+# Study Inclusion and Methodology
+- The initial search yielded 174 articles, with 35 reviewed in detail, leading to the inclusion of 3 RCTs involving 1,696 patients. Meta-regression was not performed due to the small number of studies, which could introduce bias.
 
-# Author Contributions
-The authors contributed to the study design, data analysis, and manuscript revision, ensuring a comprehensive evaluation of the findings.
+# Study Characteristics
+- The included studies were published between 2007 and 2013 and conducted in various countries, focusing on adult patients with sample sizes ranging from 128 to 996 and a follow-up duration of 12 months.
 
-# Disclosures
-The authors disclosed their affiliations and any potential conflicts of interest related to the study and its funding sources.
+# Quality Assessment
+- The quality of the RCTs was evaluated using the Jadad scale, indicating that the studies were of high quality.
 
-# Acknowledgments
-Editorial support for the study was funded by Eisai Inc. and provided by Imprint Publication Science.
+# Outcomes
+- **Seizure Freedom**: No significant difference was found between LEV and CBZ regarding seizure freedom at both 6 months and 12 months.
+- **Discontinuation Due to Adverse Events (AEs)**: LEV had a significantly lower rate of discontinuation due to AEs compared to CBZ.
+- **Adverse Events**: No significant differences were found in the frequency of several AEs (headache, fatigue, diarrhea, and vertigo) between the two drugs. However, LEV was associated with a higher incidence of depression and a lower incidence of rash compared to CBZ.
+
+# Statistical Analysis
+- The results included pooled risk ratios (RR) with confidence intervals (CI) to assess the efficacy and safety of the treatments, indicating that while LEV showed some advantages in tolerability, there was no significant difference in seizure control.
+
+# Adverse Events Analysis
+- The analysis summarized results for specific adverse events with statistical measures, including risk ratios (RR) and confidence intervals (CI). The I-squared values indicated low to moderate heterogeneity among studies.
+
+# Findings
+- LEV showed a tendency to reduce treatment withdrawal due to AEs compared to CBZ, although no statistically significant differences were found in seizure freedom rates. LEV was associated with a higher incidence of depression, while CBZ was linked to a higher rate of rash.
+
+# Limitations
+- The small number of studies and patients included limits the robustness of the conclusions. There is also a lack of standardized criteria for reporting AEs, making comparisons challenging.
+
+# Conclusion
+- Major outcomes regarding seizure freedom were similar for both LEV and CBZ, but the differing side effect profiles may influence treatment choices based on patient preferences. Further research is needed to clarify the relationship between LEV and depression and to establish standardized measures for reporting AEs.
+
+# Ethical Considerations
+- The authors declare adherence to ethical standards, including issues related to consent and data integrity.
+
+# References Overview
+- The text includes references from various studies evaluating the efficacy, safety, and side effects of LEV and CBZ in treating epilepsy, emphasizing ongoing evaluations of their clinical use.
+
+## Levetiracetam
+- Studies assess its effectiveness as both an add-on therapy and monotherapy in childhood epilepsy, noting its favorable side effect profile compared to older AEDs.
+
+## Carbamazepine
+- Discussions focus on its therapeutic range, potential side effects, and comparisons with newer AEDs, highlighting concerns about its narrow therapeutic range.
+
+## Meta-analyses and Systematic Reviews
+- References to meta-analyses evaluate the overall efficacy and safety of new AEDs, including assessments of publication bias and heterogeneity in clinical trial results.
+
+## Quality of Life and Side Effects
+- Studies focus on the impact of AEDs on patients' quality of life, psychiatric symptoms, and specific side effects.
+
+## Comparative Studies
+- Randomized controlled trials comparing LEV with CBZ and other AEDs highlight differences in efficacy, tolerability, and cognitive outcomes.
 `
 
 export const title = "Efficacy and Safety of Perampanel in Elderly Patients"

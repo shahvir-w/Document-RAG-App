@@ -3,7 +3,7 @@ import MainView from './components/MainView';
 import LandingPage from './components/LandingPage';
 import { uploadDocument, uploadText } from './services/api';
 import { parseSummary, ParsedSummary } from './services/summaryParse';
-
+import { title, summary } from './services/testing';
 
 type DocumentData = {
   id: string;
@@ -12,6 +12,7 @@ type DocumentData = {
   title?: string;
   summary?: string;
   text?: string;
+  pdfUrl?: string;
 };
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [processingMessage, setProcessingMessage] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);;
   
   const isValidFileType = (file: File): boolean => {
     const acceptedTypes = [
@@ -41,7 +42,6 @@ function App() {
       setError("Please upload a PDF, MD, or TXT file.");
       return;
     }
-    
     setIsProcessing(true);
     setProcessingProgress(0);
     setProcessingMessage("");
@@ -61,6 +61,7 @@ function App() {
           title: response.title,
           summary: response.summary,
           text: response.text,
+          pdfUrl: file.type === 'application/pdf' ? URL.createObjectURL(file) : undefined
         };
         
         setActiveDocument(newDocument);
@@ -70,6 +71,7 @@ function App() {
         console.log("text: ", newDocument.text);
         console.log("summary: ", newDocument.summary);
         console.log("title: ", newDocument.title);
+        console.log("pdfUrl: ", newDocument.pdfUrl);
 
       }
     } catch (err) {
@@ -114,6 +116,7 @@ function App() {
         summary={parsedSummary || []}
         title={activeDocument?.title || ""}
         text={activeDocument?.text || ""}
+        pdfUrl={activeDocument?.pdfUrl || ""}
       />
     </div>
   ) : (
