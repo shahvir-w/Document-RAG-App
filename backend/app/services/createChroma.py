@@ -10,66 +10,55 @@ from langchain_openai import OpenAIEmbeddings
 load_dotenv()
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-CHROMA_PATH = "app/chroma"
-DATA_PATH = "app/data"
 
+def get_user_paths(user_id: str) -> tuple[str, str]:
+    """Get the paths for user's data and chroma directories"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_path = os.path.join(base_dir, "data", user_id)
+    chroma_path = os.path.join(base_dir, "chroma", user_id)
+    return data_path, chroma_path
 
-def create_chroma_db(file_type, clear_existing=True):
-    """
-    Create a Chroma database from document files.
-    """
-    if clear_existing:
-        clear_database()
+def create_chroma_db(file_type: str, user_id: str):
+    """Create a Chroma database from document files."""
+    data_path, chroma_path = get_user_paths(user_id)
     
-    documents = load_documents(file_type)
-    chunks = split_documents(documents, 800, 80)
-    add_to_chroma(chunks)
-    return documents[0].page_content
+    try:
+        documents = load_documents(file_type, data_path)
+        if not documents:
+            raise ValueError("No documents found to process")
+            
+        chunks = split_documents(documents, 800, 80)
+        add_to_chroma(chunks, chroma_path)
+        return documents[0].page_content
+    except Exception as e:
+        raise Exception(f"Error in create_chroma_db: {str(e)}")
 
-def load_documents(file_type: str):
-    """Load documents from the data directory."""
-    # Initialize document_loader as None
-    document_loader = None
+def load_documents(file_type: str, data_path: str) -> list[Document]:
+    """Load documents from the user's data directory."""
+    documents = []
     
-    if file_type == 'pdf':
-        document_loader = PyPDFDirectoryLoader(path=DATA_PATH, mode="single")
-    elif file_type == 'txt':
-        # Create a list to store documents
-        documents = []
-        # Walk through the directory and load each .txt file
-        for filename in os.listdir(DATA_PATH):
-            if filename.endswith('.txt'):
-                file_path = os.path.join(DATA_PATH, filename)
-                try:
-                    loader = TextLoader(file_path=file_path, encoding='utf-8')
-                
-                    print(loader)
+    try:
+        if file_type == 'pdf':
+            loader = PyPDFDirectoryLoader(path=data_path, mode="single")
+            documents = loader.load()
+        elif file_type in ['txt', 'text']:
+            for filename in os.listdir(data_path):
+                if filename.endswith('.txt'):
+                    file_path = os.path.join(data_path, filename)
+                    loader = TextLoader(file_path=file_path)
                     documents.extend(loader.load())
-                    print(documents)
-                except Exception as e:
-                    print(f"Error loading {file_path}: {e}")
-        return documents
-    elif file_type == 'markdown' or file_type == 'md':
-        # Handle both 'markdown' and 'md' cases
-        documents = []
-        for filename in os.listdir(DATA_PATH):
-            if filename.endswith('.md') or filename.endswith('.markdown'):
-                file_path = os.path.join(DATA_PATH, filename)
-                try:
+        elif file_type in ['markdown', 'md']:
+            for filename in os.listdir(data_path):
+                if filename.endswith(('.md', '.markdown')):
+                    file_path = os.path.join(data_path, filename)
                     loader = UnstructuredMarkdownLoader(file_path)
                     documents.extend(loader.load())
-                except Exception as e:
-                    print(f"Error loading {file_path}: {e}")
+        else:
+            raise ValueError(f"Unsupported file type: {file_type}")
+            
         return documents
-    else:
-        raise ValueError(f"Unsupported file type: {file_type}")
-    
-    # If we reach here, we're dealing with PDF and document_loader is set
-    if document_loader:
-        return document_loader.load()
-    
-    # If we reach here without a document_loader, something went wrong
-    raise ValueError(f"Failed to create a document loader for file type: {file_type}")
+    except Exception as e:
+        raise Exception(f"Error loading documents: {str(e)}")
 
 def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80):
     """Split documents into smaller chunks."""
@@ -81,31 +70,22 @@ def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80)
     )
     return text_splitter.split_documents(documents)
 
-
-def add_to_chroma(chunks: list[Document]):
-    """Add document chunks to Chroma database."""
-    # Load the existing database.
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
+def add_to_chroma(chunks: list[Document], chroma_path: str):
+    """Add document chunks to user's Chroma database."""
+    db = Chroma(persist_directory=chroma_path, embedding_function=embeddings)
     
-    # Calculate Page IDs.
     chunks_with_ids = calculate_chunk_ids(chunks)
-    
-    # Add or Update the documents.
-    existing_items = db.get(include=[])  # IDs are always included by default
+    existing_items = db.get(include=[])
     existing_ids = set(existing_items["ids"])
     
-    # Only add documents that don't exist in the DB.
-    new_chunks = []
-    for chunk in chunks_with_ids:
-        if chunk.metadata["id"] not in existing_ids:
-            new_chunks.append(chunk)
+    new_chunks = [chunk for chunk in chunks_with_ids 
+                 if chunk.metadata["id"] not in existing_ids]
     
-    if len(new_chunks):
+    if new_chunks:
         new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
         db.add_documents(new_chunks, ids=new_chunk_ids)
         return len(new_chunks)
-    else:
-        return 0
+    return 0
 
 def calculate_chunk_ids(chunks):
     """Calculate unique IDs for each document chunk."""

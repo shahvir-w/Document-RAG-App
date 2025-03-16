@@ -1,53 +1,74 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
 import os
-from app.tasks import create_chroma_db, create_document_summary
+from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
+from ..tasks.cleanup_tasks import schedule_user_cleanup
 import shutil
 import redis
-from fastapi import HTTPException
-
+import json
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
-
 router = APIRouter()
 
-@router.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
-    if os.path.exists(data_dir):
-        shutil.rmtree(data_dir)
-
-    documentId = str(uuid.uuid4())
-    
-    # Define the file path where the file will be saved
+def ensure_user_directories(user_id: str) -> tuple[str, str]:
+    """Create and return paths for user's data and chroma directories"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_location = os.path.join(base_dir, "../data", f"{documentId}_{file.filename}")
-    os.makedirs(os.path.dirname(file_location), exist_ok=True)
+    
+    # Create user-specific data directory
+    user_data_dir = os.path.join(base_dir, "../data", user_id)
+    if os.path.exists(user_data_dir):
+        # Clean up old user files but keep the directory
+        for file in os.listdir(user_data_dir):
+            os.remove(os.path.join(user_data_dir, file))
+    else:
+        os.makedirs(user_data_dir, exist_ok=True)
+    
+    # Create user-specific chroma directory
+    user_chroma_dir = os.path.join(base_dir, "../chroma", user_id)
+    os.makedirs(user_chroma_dir, exist_ok=True)
+    
+    return user_data_dir, user_chroma_dir
 
-    content_type = file.filename.split(".")[1]
-    print(content_type)
+@router.post("/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    userId: str = Form(...)
+):
+    try:
+        # Setup user directories
+        user_data_dir, user_chroma_dir = ensure_user_directories(userId)
+        
+        document_id = str(uuid.uuid4())
+        task_id = str(uuid.uuid4())
+        
+        # Save the uploaded file
+        file_location = os.path.join(user_data_dir, f"{document_id}_{file.filename}")
+        with open(file_location, "wb") as buffer:
+            buffer.write(await file.read())
 
-    # Save the uploaded file
-    with open(file_location, "wb") as buffer:
-        buffer.write(await file.read())
+        content_type = file.filename.split(".")[-1].lower()
+        if content_type not in ['txt', 'md', 'pdf']:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
 
-    # Generate a unique task_id for tracking progress
-    task_id = str(uuid.uuid4())
+        # Schedule cleanup for this user's data
+        schedule_user_cleanup.delay(userId)
 
-    # Trigger Celery tasks for Chroma DB and Summary creation
+        # Trigger Celery tasks
+        create_chroma_db.apply_async(args=[file.filename, content_type, task_id, userId])
+        create_document_summary.apply_async(args=[file.filename, content_type, task_id, userId])
 
-    create_chroma_db.apply_async(args=[file.filename, content_type, task_id])
-    create_document_summary.apply_async(args=[file.filename, content_type, task_id])
-
-    # Return a success response with task_ids
-    return {
-        "documentId": documentId,
-        "filename": file.filename,
-        "taskId": task_id,
-    }
-
+        return {
+            "documentId": document_id,
+            "userId": userId,
+            "filename": file.filename,
+            "taskId": task_id,
+        }
+    except Exception as e:
+        redis_client.publish(f"progress_channel:{task_id}", 
+            json.dumps({"status": "error", "message": str(e)}))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/progress/{task_id}")
 async def get_progress(task_id: str):
@@ -65,43 +86,41 @@ async def get_progress(task_id: str):
 
     return StreamingResponse(event_stream(), media_type='text/event-stream')
 
-
-
 class TextRequest(BaseModel):
     content: str
+    userId: str
 
 @router.post("/upload-text")
 async def upload_text(request: TextRequest):
     try:
+        # Setup user directories
+        user_data_dir, user_chroma_dir = ensure_user_directories(request.userId)
+        
         document_id = str(uuid.uuid4())
+        task_id = str(uuid.uuid4())
         
-        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
-        if os.path.exists(data_dir):
-            shutil.rmtree(data_dir)
-        os.makedirs(data_dir, exist_ok=True)
-
-        # Create a filename that includes document_id
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        file_location = os.path.join(base_dir, "../data", f"{document_id}_text.txt")
+        # Create filename and save content
+        filename = f"{document_id}_text.txt"
+        file_location = os.path.join(user_data_dir, filename)
         
-        # Save the text content to a file
         with open(file_location, "w", encoding='utf-8') as f:
             f.write(request.content)
 
-        # Generate task_id for progress tracking
-        task_id = str(uuid.uuid4())
+        # Schedule cleanup for this user's data
+        schedule_user_cleanup.delay(request.userId)
 
-        # Pass the full filename to the tasks, not just "text.txt"
-        create_chroma_db.apply_async(args=[os.path.basename(file_location), "txt", task_id])
-        create_document_summary.apply_async(args=[os.path.basename(file_location), "txt", task_id])
+        # Trigger Celery tasks
+        create_chroma_db.apply_async(args=[filename, "txt", task_id, request.userId])
+        create_document_summary.apply_async(args=[filename, "txt", task_id, request.userId])
 
         return {
             "documentId": document_id,
-            "filename": file_location,  # Return the actual filename
+            "userId": request.userId,
+            "filename": filename,
             "taskId": task_id,
         }
     except Exception as e:
-        # Clean up on error
-        if 'file_location' in locals() and os.path.exists(file_location):
-            os.remove(file_location)
+        redis_client.publish(f"progress_channel:{task_id}", 
+            json.dumps({"status": "error", "message": str(e)}))
         raise HTTPException(status_code=500, detail=str(e))
+

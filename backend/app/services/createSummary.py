@@ -19,6 +19,11 @@ llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
 CHROMA_PATH = "app/chromaSummary"
 DATA_PATH = "app/data"
 
+def get_user_data_path(user_id: str) -> str:
+    """Get the path for user's data directory"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_dir, "data", user_id)
+
 def create_title(summary: str):
     prompt = f"""
     Give me the title of the following text as output. Do not include any markdown formatting, just a string.
@@ -41,14 +46,12 @@ def create_documents(documents: list[Document], chunk_size=10000, chunk_overlap=
     )
     return text_splitter.split_documents(documents)
 
-def create_document_summary(file_type):
+def create_document_summary(file_type: str, user_id: str):
+    """Create a summarized version of the documents."""
     print(f"Creating document summary for {file_type}")
-    """
-    Create a summarized version of the documents.
-    """
     try:
-        # Load documents
-        documents = load_documents(file_type)
+        data_path = get_user_data_path(user_id)
+        documents = load_documents(file_type, data_path)
         print(f"Loaded {len(documents)} documents")
         
         if not documents:
@@ -155,7 +158,7 @@ def create_document_summary(file_type):
 
 def main():
     try:
-        summary = create_document_summary('txt')
+        summary = create_document_summary('txt', 'test_user')
         print("\nSummary:")
         print(summary)
     except Exception as e:

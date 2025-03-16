@@ -9,9 +9,13 @@ const api = axios.create({
   },
 });
 
+const generateUserId = () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
 export const uploadDocument = async (file: File, onProgressUpdate: (progress: number, message: string) => void) => {
+  const userId = generateUserId();
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('userId', userId);
   
   try {
     // First phase: Track upload progress
@@ -49,10 +53,6 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
             // This is our summary completion message
             currentProgress = 100;
             onProgressUpdate(currentProgress, jsonMessage.status);
-
-            setTimeout(() => {
-              onProgressUpdate(currentProgress, "Creating compartments...");
-            }, 1000);
 
             eventSource.close();
             resolve({
@@ -124,11 +124,16 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
 };
 
 export const uploadText = async (textContent: string, onProgressUpdate: (progress: number, message: string) => void) => {
+  const userId = generateUserId();
+  
   try {
     onProgressUpdate(0, "Starting text processing...");
     
     const response = await api.post('/document/upload-text', 
-      { content: textContent },
+      { 
+        content: textContent,
+        userId: userId
+      },
       { timeout: 7000 } // 7 seconds timeout
     );
     
