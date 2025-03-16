@@ -2,16 +2,21 @@ import { useState } from 'react';
 import MainView from './components/MainView';
 import LandingPage from './components/LandingPage';
 import { uploadDocument, uploadText } from './services/api';
+import { parseSummary, ParsedSummary } from './services/summaryParse';
+
 
 type DocumentData = {
   id: string;
   name: string;
   type: string;
-  title?: string | null;
+  title?: string;
+  summary?: string;
+  text?: string;
 };
 
 function App() {
   const [activeDocument, setActiveDocument] = useState<DocumentData | null>(null);
+  const [parsedSummary, setParsedSummary] = useState<ParsedSummary | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [processingMessage, setProcessingMessage] = useState<string>("");
@@ -45,18 +50,31 @@ function App() {
     try {
       const response: any = await uploadDocument(file, (progress, message) => {
         setProcessingProgress(progress);
-        if (message) setProcessingMessage(message);
+        setProcessingMessage(message);
       });
       
       if (response) {
-        setActiveDocument({
+        const newDocument = {
           id: response.documentId,
           name: file.name,
           type: file.type,
-        });
+          title: response.title,
+          summary: response.summary,
+          text: response.text,
+        };
+        
+        setActiveDocument(newDocument);
+        const parsedSummary = parseSummary(response.summary || "");
+        setParsedSummary(parsedSummary);
+
+        console.log("text: ", newDocument.text);
+        console.log("summary: ", newDocument.summary);
+        console.log("title: ", newDocument.title);
+
       }
     } catch (err) {
       setError("Failed to process the document. Please try again.");
+      setIsProcessing(false);
       console.error(err);
     }
   };
@@ -78,7 +96,7 @@ function App() {
         id: response.documentId,
         name: "Text Document",
         type: "text/plain",
-        title: textContent.substring(0, 30) + "..."
+        summary: response.summary
       });
     } catch (err) {
       setError("Failed to process the text. Please try again.");
@@ -92,7 +110,11 @@ function App() {
 
   return processingProgress === 100 ? (
     <div className="min-h-screen relative overflow-hidden">
-      <MainView/>
+      <MainView 
+        summary={parsedSummary || []}
+        title={activeDocument?.title || ""}
+        text={activeDocument?.text || ""}
+      />
     </div>
   ) : (
     <LandingPage 

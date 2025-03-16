@@ -20,9 +20,9 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 7000, // 7 seconds timeout
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
-          // Scale upload progress to 0-20% range
           const uploadPercent = Math.round((progressEvent.loaded * 20) / progressEvent.total);
           onProgressUpdate(uploadPercent, "Uploading document...");
         }
@@ -32,37 +32,69 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
     const taskId = response.data.taskId;
     console.log("Upload completed, taskId:", taskId);
     
-    // Second phase: Track processing progress with SSE
     return new Promise((resolve, reject) => {
       const eventSource = new EventSource(`${API_BASE_URL}/document/progress/${taskId}`);
-      let currentProgress = 20; // Start at 20% after upload
-      const processedMessages = new Set(); // Track which messages we've seen
+      let currentProgress = 20;
+      const processedMessages = new Set();
+      let documentText = '';
       
       eventSource.onmessage = (event) => {
-        const message = event.data;
+        let message = event.data;
         console.log("Progress update:", message);
         
-        // Only increment progress if we haven't seen this message before
+        try {
+          // Try to parse the message as JSON
+          const jsonMessage = JSON.parse(message);
+          if (jsonMessage.status && jsonMessage.summary && jsonMessage.title) {
+            // This is our summary completion message
+            currentProgress = 100;
+            onProgressUpdate(currentProgress, jsonMessage.status);
+
+            setTimeout(() => {
+              onProgressUpdate(currentProgress, "Creating compartments...");
+            }, 1000);
+
+            eventSource.close();
+            resolve({
+              ...response.data,
+              summary: jsonMessage.summary,
+              title: jsonMessage.title,
+              text: documentText
+            });
+            return;
+          }
+          if (jsonMessage.status && jsonMessage.text) {
+            // Store the document text
+            documentText = jsonMessage.text;
+            onProgressUpdate(currentProgress, jsonMessage.status);
+
+            setTimeout(() => {
+              onProgressUpdate(currentProgress, "Creating compartments...");
+            }, 2500);
+            
+            return;
+          }
+        } catch (e) {
+          // Not a JSON message, handle as regular status update
+          message = event.data;
+        }
+        
         if (!processedMessages.has(message)) {
           processedMessages.add(message);
           
-          // Don't increment for error messages
           if (!message.includes("Error")) {
             currentProgress = Math.min(currentProgress + 20, 100);
           }
           
-          // Handle different messages
           switch (message) {
             case "Splitting text into vectors...":
-            case "Text split into vectors successfully!":
-            case "Creating summary...":
-            case "Summary created successfully!":
               onProgressUpdate(currentProgress, message);
               break;
-            case "Summary created successfully!":
-              onProgressUpdate(100, "Processing complete!");
-              eventSource.close();
-              resolve(response.data);
+            case "Storing vectors...":
+              onProgressUpdate(currentProgress, message);
+              break;
+            case "Creating compartments...":
+              onProgressUpdate(currentProgress, message);
               break;
             default:
               if (message.includes("Error")) {
@@ -80,9 +112,13 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
       };
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading document:', error);
-    onProgressUpdate(0, "Upload failed");
+    if (error.code === 'ECONNABORTED') {
+      onProgressUpdate(0, "Server took too long to respond. Please try again");
+    } else {
+      onProgressUpdate(0, "Upload failed");
+    }
     throw error;
   }
 };

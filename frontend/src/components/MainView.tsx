@@ -3,10 +3,11 @@ import { Upload } from "lucide-react";
 import DocumentView from "./DocumentView";
 import Compartments from "./Compartments";
 import Chat from "./Chat";
+import { ParsedSummary } from "../services/summaryParse";
 
-function MainView() {
+function MainView(props: { summary: ParsedSummary, text: string, title: string }) {
   const [activeTab, setActiveTab] = useState("compartments");
-  const documentTitle = "Explainable Artificial Intelligence Applications in Cyber Security: State-of-the-Art in Research";
+  const documentTitle = props.title;
   
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200">
@@ -38,7 +39,7 @@ function MainView() {
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Document Section (Left - 40% width) */}
-        <DocumentView title={documentTitle} />
+        <DocumentView text={props.text}/>
         
         {/* Navigation Section (Right - 60% width) */}
         <div className="w-3/5 flex flex-col overflow-hidden border-l border-zinc-700">
@@ -59,12 +60,12 @@ function MainView() {
                 } transition-colors`}
                 onClick={() => setActiveTab("chat")}
               >
-                Chat
+                Chat 
               </button>
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === "compartments" && <Compartments />}
+            {activeTab === "compartments" && <Compartments summary={props.summary} title={documentTitle}/>}
             {activeTab === "chat" && <Chat />}
           </div>
         </div>

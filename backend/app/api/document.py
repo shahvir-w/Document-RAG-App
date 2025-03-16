@@ -41,9 +41,7 @@ async def upload_document(file: UploadFile = File(...)):
     return {
         "documentId": documentId,
         "filename": file.filename,
-        "taskId": task_id,  # Send the task_id to the frontend for SSE
-        "chromaDbTaskId": chroma_db_task.id,
-        "summaryTaskId": summary_task.id,
+        "taskId": task_id,
     }
 
 

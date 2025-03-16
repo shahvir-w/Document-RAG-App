@@ -23,7 +23,8 @@ def create_chroma_db(file_type='pdf', clear_existing=True):
     
     documents = load_documents(file_type)
     chunks = split_documents(documents, 800, 80)
-    return add_to_chroma(chunks)
+    add_to_chroma(chunks)
+    return documents[0].page_content
 
 def load_documents(file_type: str):
     """Load documents from the data directory."""
@@ -44,6 +45,7 @@ def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80)
         is_separator_regex=False,
     )
     return text_splitter.split_documents(documents)
+
 
 def add_to_chroma(chunks: list[Document]):
     """Add document chunks to Chroma database."""

@@ -9,7 +9,6 @@ from app.services.createChroma import load_documents
 
 load_dotenv()
 
-
 api_key = os.environ.get('OPENAI_API_KEY')
 if not api_key:
     raise ValueError("OPENAI_API_KEY environment variable is not set or is empty")
@@ -20,28 +19,19 @@ llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
 CHROMA_PATH = "app/chromaSummary"
 DATA_PATH = "app/data"
 
-def determine_optimal_chunk_size(documents):
+def create_title(summary: str):
+    prompt = f"""
+    Give me the title of the following text as output. Do not include any markdown formatting, just a string.
+
+    For example, if the text is:
+    "# Heading: The Intricacies of AI. ## Subheading: Understanding the Basics....."
+    Your output should be "Understanding Intricacies of AI".
+
+    text:
+    {summary}
     """
-    Determine optimal chunk size based on document size.
-    """
-    try:
-        # Get the total content of all documents
-        combined_content = ""
-        for doc in documents:
-            combined_content += doc.page_content
-            
-        # Get token count of the combined content
-        num_tokens_total = llm.get_num_tokens(combined_content)
-        print(f"Total document size: {num_tokens_total} tokens")
-        
-        chunk_size = num_tokens_total // 2
-        chunk_overlap = chunk_size // 10
-        return chunk_size, chunk_overlap
-    
-    except Exception as e:
-        print(f"Error determining optimal chunk size: {e}")
-        # Return default values if there's an error
-        return 2000, 200
+    title = llm.invoke(prompt)
+    return title.content
 
 def create_documents(documents: list[Document], chunk_size=10000, chunk_overlap=500):
     """Split documents into chunks for summarization."""
@@ -63,8 +53,38 @@ def create_document_summary(file_type='pdf'):
         if not documents:
             return "No documents found to summarize."
         
-        # Determine optimal chunk size
-        chunk_size, chunk_overlap = determine_optimal_chunk_size(documents)
+        num_tokens_total = llm.get_num_tokens(documents[0].page_content)
+        print(f"Total document size: {num_tokens_total} tokens")
+        
+        if num_tokens_total < 6000:
+            prompt = f"""
+            Write a comprehensive and detailed summary of the following text delimited by triple backquotes.
+            The summary should be comprehensive and separated into sections/subsections (compartments). It should be in markdown format.
+            Main compartments should have a #heading. Subcompartments should have a ##heading. Do not say that this is a summary.
+            Do not include a title. Only the compartments. Example output structure:
+
+            # Abstract 
+            This document presents a detailed examination of a meta-analysis article published in the Iranian Journal of Public Health, which investigates the efficacy and side effects of two antiepileptic drugs: levetiracetam (LEV) and carbamazepine (CBZ). 
+            The study aims to provide insights into the treatment of epilepsy, a condition affecting millions worldwide.
+            
+            # Background on Epilepsy
+            - **Prevalence**: Epilepsy is a common neurological disorder, with an estimated 70 million individuals affected globally. The incidence varies significantly between high-income and low- to middle-income countries.
+            - **Treatment Gap**: Approximately 85% of patients with epilepsy do not receive adequate treatment, despite many having forms of the condition that are manageable with medication.
+
+            # Drugs Compared
+            ## Levetiracetam
+            A widely used antiepileptic drug known for its effectiveness in controlling seizures.
+            ## Carbamazepine
+            Another commonly prescribed antiepileptic medication with a similar mechanism of action.
+
+            Here is the text to compartmentalize.:
+            ```{documents[0].page_content}```
+            """
+            summary = llm.invoke(prompt)
+            return summary.content
+
+        chunk_size = num_tokens_total // 1 # creates 4 chunks for the summary
+        chunk_overlap = chunk_size // 10
         print(f"Using chunk size: {chunk_size}, chunk overlap: {chunk_overlap}")
         
         # Split documents into chunks
@@ -78,16 +98,34 @@ def create_document_summary(file_type='pdf'):
         
         # Create prompts
         map_prompt = """
-        Write a quicky with key points summary of the following:
-        "{text}"
-        CONCISE SUMMARY:
+        Give a fundemntal overview of the following text:
+        "{text}":
         """
         map_prompt_template = PromptTemplate(template=map_prompt, input_variables=["text"])
     
         combine_prompt = """
         Write a comprehensive and detailed summary of the following text delimited by triple backquotes.
-        The summary should be comprehensive and separated into sections/subsections (compartments).
+        The summary should be comprehensive and separated into sections/subsections (compartments). It should be in markdown format.
+        Main compartments should have a #heading. Subcompartments should have a ##heading. Do not say that this is a summary.
+        Do not include a title. Only the compartments. Example output structure:
+
+        # Abstract 
+        This document presents a detailed examination of a meta-analysis article published in the Iranian Journal of Public Health, which investigates the efficacy and side effects of two antiepileptic drugs: levetiracetam (LEV) and carbamazepine (CBZ). 
+        The study aims to provide insights into the treatment of epilepsy, a condition affecting millions worldwide.
+        
+        # Background on Epilepsy
+        - **Prevalence**: Epilepsy is a common neurological disorder, with an estimated 70 million individuals affected globally. The incidence varies significantly between high-income and low- to middle-income countries.
+        - **Treatment Gap**: Approximately 85% of patients with epilepsy do not receive adequate treatment, despite many having forms of the condition that are manageable with medication.
+
+        # Drugs Compared
+        ## Levetiracetam
+        A widely used antiepileptic drug known for its effectiveness in controlling seizures.
+        ## Carbamazepine
+        Another commonly prescribed antiepileptic medication with a similar mechanism of action.
+
+        Here is the text to compartmentalize:
         ```{text}```
+        
         COMPARTMENTS:
         """
         combine_prompt_template = PromptTemplate(template=combine_prompt, input_variables=["text"])
@@ -98,7 +136,7 @@ def create_document_summary(file_type='pdf'):
             chain_type='map_reduce',
             verbose=True,
             map_prompt=map_prompt_template,
-            combine_prompt=combine_prompt_template
+            combine_prompt=combine_prompt_template,
         )
     
         # Use invoke instead of run (which is deprecated)
@@ -112,6 +150,7 @@ def create_document_summary(file_type='pdf'):
     except Exception as e:
         print(f"Error creating document summary: {e}")
         return f"Error creating summary: {str(e)}"
+
 
 def main():
     try:
