@@ -14,7 +14,7 @@ CHROMA_PATH = "app/chroma"
 DATA_PATH = "app/data"
 
 
-def create_chroma_db(file_type='pdf', clear_existing=True):
+def create_chroma_db(file_type, clear_existing=True):
     """
     Create a Chroma database from document files.
     """
@@ -28,13 +28,48 @@ def create_chroma_db(file_type='pdf', clear_existing=True):
 
 def load_documents(file_type: str):
     """Load documents from the data directory."""
+    # Initialize document_loader as None
+    document_loader = None
+    
     if file_type == 'pdf':
         document_loader = PyPDFDirectoryLoader(path=DATA_PATH, mode="single")
-    elif file_type == 'text':
-        document_loader = TextLoader(path=DATA_PATH)
-    elif file_type == 'markdown':
-        document_loader = UnstructuredMarkdownLoader(path=DATA_PATH, mode="single")
-    return document_loader.load()
+    elif file_type == 'txt':
+        # Create a list to store documents
+        documents = []
+        # Walk through the directory and load each .txt file
+        for filename in os.listdir(DATA_PATH):
+            if filename.endswith('.txt'):
+                file_path = os.path.join(DATA_PATH, filename)
+                try:
+                    loader = TextLoader(file_path=file_path, encoding='utf-8')
+                
+                    print(loader)
+                    documents.extend(loader.load())
+                    print(documents)
+                except Exception as e:
+                    print(f"Error loading {file_path}: {e}")
+        return documents
+    elif file_type == 'markdown' or file_type == 'md':
+        # Handle both 'markdown' and 'md' cases
+        documents = []
+        for filename in os.listdir(DATA_PATH):
+            if filename.endswith('.md') or filename.endswith('.markdown'):
+                file_path = os.path.join(DATA_PATH, filename)
+                try:
+                    loader = UnstructuredMarkdownLoader(file_path)
+                    documents.extend(loader.load())
+                except Exception as e:
+                    print(f"Error loading {file_path}: {e}")
+        return documents
+    else:
+        raise ValueError(f"Unsupported file type: {file_type}")
+    
+    # If we reach here, we're dealing with PDF and document_loader is set
+    if document_loader:
+        return document_loader.load()
+    
+    # If we reach here without a document_loader, something went wrong
+    raise ValueError(f"Failed to create a document loader for file type: {file_type}")
 
 def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80):
     """Split documents into smaller chunks."""

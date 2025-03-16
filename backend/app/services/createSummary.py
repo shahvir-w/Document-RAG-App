@@ -41,7 +41,8 @@ def create_documents(documents: list[Document], chunk_size=10000, chunk_overlap=
     )
     return text_splitter.split_documents(documents)
 
-def create_document_summary(file_type='pdf'):
+def create_document_summary(file_type):
+    print(f"Creating document summary for {file_type}")
     """
     Create a summarized version of the documents.
     """
@@ -154,7 +155,7 @@ def create_document_summary(file_type='pdf'):
 
 def main():
     try:
-        summary = create_document_summary()
+        summary = create_document_summary('txt')
         print("\nSummary:")
         print(summary)
     except Exception as e:

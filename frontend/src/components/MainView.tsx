@@ -5,11 +5,19 @@ import Compartments from "./Compartments";
 import Chat from "./Chat";
 import { ParsedSummary } from "../services/summaryParse";
 
-function MainView(props: { summary: ParsedSummary, text: string, title: string, pdfUrl?: string }) {
-  const [activeTab, setActiveTab] = useState("compartments");
-  const documentTitle = props.title;
+interface MainViewProps {
+  summary: ParsedSummary;
+  title: string;
+  text: string;
+  pdfUrl: string;
+  onNewDocument: () => void;
+}
 
-  console.log(props.summary);
+export default function MainView({ summary, title, text, pdfUrl, onNewDocument }: MainViewProps) {
+  const [activeTab, setActiveTab] = useState("compartments");
+  const documentTitle = title;
+
+  console.log(summary);
   
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200">
@@ -31,7 +39,10 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string, 
           <h1 className="text-xl font-bold leading-tight text-zinc-100">
             {documentTitle}
           </h1>
-          <button className="border border-zinc-700 rounded px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 transition-colors bg-zinc-950">
+          <button 
+            className="border border-zinc-700 rounded px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 transition-colors bg-zinc-950"
+            onClick={onNewDocument}
+          >
             <Upload className="h-4 w-4" />
             Upload New Document
           </button>
@@ -41,7 +52,7 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string, 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Document Section (Left - 40% width) */}
-        <DocumentView text={props.text} pdfUrl={props.pdfUrl}/>
+        <DocumentView text={text} pdfUrl={pdfUrl}/>
         
         {/* Navigation Section (Right - 60% width) */}
         <div className="w-3/5 flex flex-col overflow-hidden border-l border-zinc-700">
@@ -67,7 +78,7 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string, 
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === "compartments" && <Compartments summary={props.summary}/>}
+            {activeTab === "compartments" && <Compartments summary={summary}/>}
             {activeTab === "chat" && <Chat />}
           </div>
         </div>
@@ -75,5 +86,3 @@ function MainView(props: { summary: ParsedSummary, text: string, title: string, 
     </div>
   );
 }
-
-export default MainView;

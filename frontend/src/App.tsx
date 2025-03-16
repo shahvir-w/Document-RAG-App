@@ -85,30 +85,55 @@ function App() {
   const handleTextSubmit = async (textContent: string) => {
     if (!textContent.trim()) return;
     
+    if (textContent.length <= 3000) {
+      setError("Text content must be longer than 3000 characters.");
+      return;
+    }
+
     setIsProcessing(true);
     setProcessingProgress(0);
+    setProcessingMessage("");
     setError(null);
     
     try {
-      const response = await uploadText(textContent, (progress) => {
+      const response: any = await uploadText(textContent, (progress, message) => {
         setProcessingProgress(progress);
+        setProcessingMessage(message);
       });
       
-      setActiveDocument({
-        id: response.documentId,
-        name: "Text Document",
-        type: "text/plain",
-        summary: response.summary
-      });
+      if (response) {
+        const newDocument = {
+          id: response.documentId,
+          name: "Text Document",
+          type: "text/plain",
+          title: response.title,
+          summary: response.summary,
+          text: response.text
+        };
+        
+        setActiveDocument(newDocument);
+        const parsedSummary = parseSummary(response.summary || "");
+        setParsedSummary(parsedSummary);
+
+        console.log("text: ", newDocument.text);
+        console.log("summary: ", newDocument.summary);
+        console.log("title: ", newDocument.title);
+      }
     } catch (err) {
       setError("Failed to process the text. Please try again.");
-      console.error(err);
-    } finally {
       setIsProcessing(false);
-      setProcessingProgress(0);
+      console.error(err);
     }
   };
   
+  const handleNewDocument = () => {
+    setActiveDocument(null);
+    setParsedSummary(null);
+    setIsProcessing(false);
+    setProcessingProgress(0);
+    setProcessingMessage("");
+    setError(null);
+  };
 
   return processingProgress === 100 ? (
     <div className="min-h-screen relative overflow-hidden">
@@ -117,6 +142,7 @@ function App() {
         title={activeDocument?.title || ""}
         text={activeDocument?.text || ""}
         pdfUrl={activeDocument?.pdfUrl || ""}
+        onNewDocument={handleNewDocument}
       />
     </div>
   ) : (

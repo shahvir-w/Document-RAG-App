@@ -6,6 +6,8 @@ import os
 from app.tasks import create_chroma_db, create_document_summary
 import shutil
 import redis
+from fastapi import HTTPException
+
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -25,6 +27,7 @@ async def upload_document(file: UploadFile = File(...)):
     os.makedirs(os.path.dirname(file_location), exist_ok=True)
 
     content_type = file.filename.split(".")[1]
+    print(content_type)
 
     # Save the uploaded file
     with open(file_location, "wb") as buffer:
@@ -34,8 +37,9 @@ async def upload_document(file: UploadFile = File(...)):
     task_id = str(uuid.uuid4())
 
     # Trigger Celery tasks for Chroma DB and Summary creation
-    chroma_db_task = create_chroma_db.apply_async(args=[file.filename, content_type, task_id])
-    summary_task = create_document_summary.apply_async(args=[file.filename, content_type, task_id])
+
+    create_chroma_db.apply_async(args=[file.filename, content_type, task_id])
+    create_document_summary.apply_async(args=[file.filename, content_type, task_id])
 
     # Return a success response with task_ids
     return {
@@ -68,6 +72,36 @@ class TextRequest(BaseModel):
 
 @router.post("/upload-text")
 async def upload_text(request: TextRequest):
-    document_id = str(uuid.uuid4())
-    print(request.content)
-    return {"documentId": document_id, "content": request.content}
+    try:
+        document_id = str(uuid.uuid4())
+        
+        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../data")
+        if os.path.exists(data_dir):
+            shutil.rmtree(data_dir)
+        os.makedirs(data_dir, exist_ok=True)
+
+        # Create a filename that includes document_id
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_location = os.path.join(base_dir, "../data", f"{document_id}_text.txt")
+        
+        # Save the text content to a file
+        with open(file_location, "w", encoding='utf-8') as f:
+            f.write(request.content)
+
+        # Generate task_id for progress tracking
+        task_id = str(uuid.uuid4())
+
+        # Pass the full filename to the tasks, not just "text.txt"
+        create_chroma_db.apply_async(args=[os.path.basename(file_location), "txt", task_id])
+        create_document_summary.apply_async(args=[os.path.basename(file_location), "txt", task_id])
+
+        return {
+            "documentId": document_id,
+            "filename": file_location,  # Return the actual filename
+            "taskId": task_id,
+        }
+    except Exception as e:
+        # Clean up on error
+        if 'file_location' in locals() and os.path.exists(file_location):
+            os.remove(file_location)
+        raise HTTPException(status_code=500, detail=str(e))
