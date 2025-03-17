@@ -13,7 +13,9 @@ type DocumentData = {
   summary?: string;
   text?: string;
   pdfUrl?: string;
+  userId?: string;
 };
+
 
 function App() {
   const [activeDocument, setActiveDocument] = useState<DocumentData | null>(null);
@@ -21,7 +23,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [processingMessage, setProcessingMessage] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);;
+  const [error, setError] = useState<string | null>(null);
   
   const isValidFileType = (file: File): boolean => {
     const acceptedTypes = [
@@ -58,8 +60,9 @@ function App() {
           id: response.documentId,
           name: file.name,
           type: file.type,
-          title: response.title,
+          userId: response.userId,
           summary: response.summary,
+          title: response.title,
           text: response.text,
           pdfUrl: file.type === 'application/pdf' ? URL.createObjectURL(file) : undefined
         };
@@ -106,6 +109,7 @@ function App() {
           id: response.documentId,
           name: "Text Document",
           type: "text/plain",
+          userId: response.userId,
           title: response.title,
           summary: response.summary,
           text: response.text
@@ -116,6 +120,7 @@ function App() {
         setParsedSummary(parsedSummary);
 
         console.log("text: ", newDocument.text);
+        console.log("userId: ", newDocument.userId);
         console.log("summary: ", newDocument.summary);
         console.log("title: ", newDocument.title);
       }
@@ -143,6 +148,7 @@ function App() {
         text={activeDocument?.text || ""}
         pdfUrl={activeDocument?.pdfUrl || ""}
         onNewDocument={handleNewDocument}
+        userId={activeDocument?.userId || ""}
       />
     </div>
   ) : (

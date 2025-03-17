@@ -1,43 +1,37 @@
 import { useState, useEffect, useRef } from "react";
 import { MdSend } from "react-icons/md";
+import { getChatResponse } from "../services/api";
+
+interface Source {
+  content: string;
+  metadata: {
+    id: string;
+    [key: string]: any;
+  };
+}
 
 interface Message {
   sender: "AI" | "User";
   content: string;
+  sources?: Source[];
 }
 
-function Chat() {
+interface ChatProps {
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  userId: string;
+  onSourceClick: (sourceContent: string) => void;
+}
+
+function Chat({ messages, setMessages, userId, onSourceClick }: ChatProps) {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: "AI",
-      content: "Hello! I can help you understand this research paper on Explainable AI in Cybersecurity. What would you like to know about it?"
-    },
-    {
-      sender: "User",
-      content: "Can you explain what XAI is and why it's important for cybersecurity?"
-    },
-    {
-      sender: "AI",
-      content: "XAI (Explainable Artificial Intelligence) refers to methods that make AI systems more transparent and interpretable. In cybersecurity, this is crucial because:\n• Most AI security systems operate as \"black boxes\" where decisions can't be easily explained\n• Security experts need to understand how the AI reached its conclusions about threats\n• Trust in AI security systems increases when users can comprehend how decisions are made\n• Regulatory compliance often requires explainability for critical security systems\n\nThe paper emphasizes that as cyber attacks become more sophisticated, having explainable AI becomes even more important for effective defense."
-    },
-    {
-      sender: "User",
-      content: "What are some examples of XAI techniques mentioned in the paper?"
-    },
-    {
-      sender: "AI",
-      content: "The paper discusses several XAI techniques applicable to cybersecurity, including:\n• Feature importance methods like LIME and SHAP\n• Rule extraction from trained models\n• Attention mechanisms in deep learning models\n• Counterfactual explanations\n• Decision trees as interpretable models\n\nThese techniques help security experts understand why an AI system flagged something as suspicious or malicious."
-    }
-  ]);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() === "") return;
     
@@ -45,8 +39,30 @@ function Chat() {
       sender: "User",
       content: input
     };
-        
+    
+    // Add user message immediately
     setMessages([...messages, newUserMessage]);
+    
+    try {
+      const result = await getChatResponse(input, userId);
+      
+      const newAiMessage: Message = {
+        sender: "AI",
+        content: result.response,
+        sources: result.sources
+      };
+      
+      // Add AI message after response is received
+      setMessages(prevMessages => [...prevMessages, newAiMessage]);
+    } catch (error) {
+      // Handle error
+      const errorMessage: Message = {
+        sender: "AI",
+        content: "Sorry, I encountered an error processing your request."
+      };
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
+    }
+    
     setInput("");
   };
   
@@ -61,8 +77,26 @@ function Chat() {
                 message.sender === "AI" ? "chat-background2 border border-zinc-700" : "chat-background1 full-border ml-auto"
               } p-3 rounded-lg max-w-[80%]`}
             >
-              <p className="text-sm font-medium text-zinc-300">{message.sender === "AI" ? "AI Assistant" : "You"}</p>
-              <p className="text-zinc-200" style={{ whiteSpace: "pre-line" }}>{message.content}</p>
+              <p className="text-sm font-medium text-zinc-300">
+                {message.sender === "AI" ? "AI Assistant" : "You"}
+              </p>
+              <div className="text-zinc-200 relative" style={{ whiteSpace: "pre-line" }}>
+                {message.content}
+                {message.sources && message.sources.length > 0 && (
+                  <span className="inline-flex gap-1 ml-2">
+                    {message.sources.map((source, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => onSourceClick(source.content)}
+                        className="inline-flex items-center justify-center w-6 h-5 text-[12px] rounded-full bg-zinc-500 hover:bg-zinc-400 text-white transition-colors"
+                        title={`Source ${idx + 1}: ${source.content.substring(0, 60)}...`}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
           <div ref={messagesEndRef} />

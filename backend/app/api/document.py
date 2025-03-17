@@ -5,7 +5,6 @@ import uuid
 import os
 from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 from ..tasks.cleanup_tasks import schedule_user_cleanup
-import shutil
 import redis
 import json
 
@@ -86,41 +85,4 @@ async def get_progress(task_id: str):
 
     return StreamingResponse(event_stream(), media_type='text/event-stream')
 
-class TextRequest(BaseModel):
-    content: str
-    userId: str
-
-@router.post("/upload-text")
-async def upload_text(request: TextRequest):
-    try:
-        # Setup user directories
-        user_data_dir, user_chroma_dir = ensure_user_directories(request.userId)
-        
-        document_id = str(uuid.uuid4())
-        task_id = str(uuid.uuid4())
-        
-        # Create filename and save content
-        filename = f"{document_id}_text.txt"
-        file_location = os.path.join(user_data_dir, filename)
-        
-        with open(file_location, "w", encoding='utf-8') as f:
-            f.write(request.content)
-
-        # Schedule cleanup for this user's data
-        schedule_user_cleanup.delay(request.userId)
-
-        # Trigger Celery tasks
-        create_chroma_db.apply_async(args=[filename, "txt", task_id, request.userId])
-        create_document_summary.apply_async(args=[filename, "txt", task_id, request.userId])
-
-        return {
-            "documentId": document_id,
-            "userId": request.userId,
-            "filename": filename,
-            "taskId": task_id,
-        }
-    except Exception as e:
-        redis_client.publish(f"progress_channel:{task_id}", 
-            json.dumps({"status": "error", "message": str(e)}))
-        raise HTTPException(status_code=500, detail=str(e))
 

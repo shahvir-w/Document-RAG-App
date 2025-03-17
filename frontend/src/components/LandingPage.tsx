@@ -163,7 +163,7 @@ function LandingPage({
 
         {/* Progress bar section */}
         {(isProcessing && (isTextSubmitted || !showTextInput)) && (
-            <div className="w-full max-w-lg mt-6"> {/* Changed from w-96 to w-full max-w-lg */}
+            <div className="w-full max-w-lg mt-6">
               <div className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-400 from-0% via-indigo-500 via-20% via-blue-600 via-40% via-sky-500 via-60% via-teal-400 via-80% to-purple-500 to-100% animate-pulse transition-all duration-300 ease-out"
@@ -174,6 +174,9 @@ function LandingPage({
                 <span>{processingMessage || "Processing..."}</span>
                 <span>{uploadProgress}%</span>
               </div>
+              <p className="text-sm text-zinc-500 mt-2 italic">
+                Processing time varies between 1-3 minutes depending on text length
+              </p>
             </div>
           )}
 

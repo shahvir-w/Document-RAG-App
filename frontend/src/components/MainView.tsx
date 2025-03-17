@@ -5,20 +5,42 @@ import Compartments from "./Compartments";
 import Chat from "./Chat";
 import { ParsedSummary } from "../services/summaryParse";
 
+interface Message {
+  sender: "AI" | "User";
+  content: string;
+}
+
 interface MainViewProps {
   summary: ParsedSummary;
   title: string;
   text: string;
   pdfUrl: string;
   onNewDocument: () => void;
+  userId: string;
 }
 
-export default function MainView({ summary, title, text, pdfUrl, onNewDocument }: MainViewProps) {
+export default function MainView({ 
+  summary, 
+  title, 
+  text, 
+  pdfUrl, 
+  onNewDocument,
+  userId
+}: MainViewProps) {
   const [activeTab, setActiveTab] = useState("compartments");
   const documentTitle = title;
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [highlightedText, setHighlightedText] = useState<string>("");
+  const [viewMode, setViewMode] = useState<'text' | 'pdf'>('text');
 
   console.log(summary);
+  console.log(userId);
   
+  const handleSourceClick = (sourceContent: string) => {
+    setHighlightedText(sourceContent);
+    setViewMode('text');
+  };
+
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200">
       {/* Full-width Title Bar */}
@@ -52,7 +74,13 @@ export default function MainView({ summary, title, text, pdfUrl, onNewDocument }
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Document Section (Left - 40% width) */}
-        <DocumentView text={text} pdfUrl={pdfUrl}/>
+        <DocumentView 
+          text={text} 
+          pdfUrl={pdfUrl}
+          highlightedText={highlightedText}
+          setViewMode={setViewMode}
+          viewMode={viewMode}
+        />
         
         {/* Navigation Section (Right - 60% width) */}
         <div className="w-3/5 flex flex-col overflow-hidden border-l border-zinc-700">
@@ -79,7 +107,14 @@ export default function MainView({ summary, title, text, pdfUrl, onNewDocument }
           </div>
           <div className="flex-1 overflow-hidden">
             {activeTab === "compartments" && <Compartments summary={summary}/>}
-            {activeTab === "chat" && <Chat />}
+            {activeTab === "chat" && (
+              <Chat 
+                messages={chatMessages}
+                setMessages={setChatMessages}
+                userId={userId}
+                onSourceClick={handleSourceClick}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -57,6 +57,7 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
             eventSource.close();
             resolve({
               ...response.data,
+              userId: userId,
               summary: jsonMessage.summary,
               title: jsonMessage.title,
               text: documentText
@@ -129,7 +130,7 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
   try {
     onProgressUpdate(0, "Starting text processing...");
     
-    const response = await api.post('/document/upload-text', 
+    const response = await api.post('/text/upload-text', 
       { 
         content: textContent,
         userId: userId
@@ -141,7 +142,7 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
     console.log("Upload completed, taskId:", taskId);
     
     return new Promise((resolve, reject) => {
-      const eventSource = new EventSource(`${API_BASE_URL}/document/progress/${taskId}`);
+      const eventSource = new EventSource(`${API_BASE_URL}/text/progress/${taskId}`);
       let currentProgress = 20;
       const processedMessages = new Set();
       let documentText = '';
@@ -160,6 +161,7 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
             eventSource.close();
             resolve({
               ...response.data,
+              userId: userId,
               summary: jsonMessage.summary,
               title: jsonMessage.title,
               text: documentText
@@ -217,6 +219,22 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
     } else {
       onProgressUpdate(0, "Text processing failed");
     }
+    throw error;
+  }
+};
+
+export const getChatResponse = async (question: string, userId: string) => {
+  try {
+    const response = await api.post('/chat/get-response', {
+      question: question,
+      userId: userId
+    });
+    return {
+      response: response.data.response,
+      sources: response.data.sources
+    };
+  } catch (error) {
+    console.error('Error getting chat response:', error);
     throw error;
   }
 };

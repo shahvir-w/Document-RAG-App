@@ -4,6 +4,7 @@ from .celery_config import celery_app
 from app.services.createChroma import create_chroma_db as create_chroma_db_service
 from app.services.createSummary import create_document_summary as create_document_summary_service
 from app.services.createSummary import create_title
+from app.services.queryChroma import query_chroma as query_chroma_service
 
 # Redis setup
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -51,4 +52,14 @@ def create_document_summary(self, file_name: str, file_type: str, task_id: str, 
         redis_client.publish(f"progress_channel:{task_id}", 
             json.dumps({"status": "error", "message": error_message}))
         self.request.chain = None
-        raise Exception(error_message) 
+        raise Exception(error_message)
+     
+@celery_app.task(bind=True, name='app.tasks.chroma_tasks.query_chroma')
+def query_chroma(self, question: str, user_id: str):
+    """Task to query Chroma DB for document search"""
+    try:
+        response = query_chroma_service(question, user_id)
+        return response
+    except Exception as e:
+        self.request.chain = None
+        raise Exception(f"Error querying Chroma DB: {str(e)}")

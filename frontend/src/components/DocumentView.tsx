@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Document, Page } from 'react-pdf';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, File } from 'lucide-react';
-import dummyPdf from "../assets/dummy.pdf" 
+import { FileText, File } from 'lucide-react';
 import { Worker } from '@react-pdf-viewer/core';
 import { Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -10,38 +8,29 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 interface DocumentViewProps {
   text: string;
   pdfUrl?: string;
+  highlightedText?: string;
+  setViewMode: (mode: 'text' | 'pdf') => void;
+  viewMode: 'text' | 'pdf';
 }
 
-function DocumentView({ text, pdfUrl }: DocumentViewProps) {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1);
-  const [viewMode, setViewMode] = useState<'text' | 'pdf'>('text');
-
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-  }
-
-  const nextPage = () => {
-    if (pageNumber < (numPages || 0)) {
-      setPageNumber(pageNumber + 1);
-    }
-  };
-
-  const previousPage = () => {
-    if (pageNumber > 1) {
-      setPageNumber(pageNumber - 1);
-    }
-  };
-
-  const zoomIn = () => {
-    setScale(scale + 0.1);
-  };
-
-  const zoomOut = () => {
-    if (scale > 0.5) {
-      setScale(scale - 0.1);
-    }
+function DocumentView({ text, pdfUrl, highlightedText, setViewMode, viewMode }: DocumentViewProps) {
+  const renderHighlightedText = () => {
+    if (!highlightedText) return text;
+    
+    const index = text.indexOf(highlightedText);
+    if (index === -1) return text;
+    
+    const before = text.substring(0, index);
+    const highlight = text.substring(index, index + highlightedText.length);
+    const after = text.substring(index + highlightedText.length);
+    
+    return (
+      <>
+        {before}
+        <mark className="bg-yellow-500/30 text-white">{highlight}</mark>
+        {after}
+      </>
+    );
   };
 
   return (
@@ -71,16 +60,15 @@ function DocumentView({ text, pdfUrl }: DocumentViewProps) {
       </div>
 
       {viewMode === 'text' ? (
-        // Text viewer
         <div className="overflow-auto p-6">
           <div className="text-zinc-300">
-              {text}
+            {renderHighlightedText()}
           </div>
         </div>
       ) : (
         <>
           {pdfUrl ? (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col justify-center">
               <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
               <div
                 style={{
