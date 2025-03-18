@@ -24,7 +24,7 @@ function App() {
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [processingMessage, setProcessingMessage] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  
+  const [ready, setReady] = useState<boolean>(false);
   const isValidFileType = (file: File): boolean => {
     const acceptedTypes = [
       'application/pdf', 
@@ -50,10 +50,15 @@ function App() {
     setError(null);
     
     try {
-      const response: any = await uploadDocument(file, (progress, message) => {
-        setProcessingProgress(progress);
-        setProcessingMessage(message);
-      });
+      const response: any = await uploadDocument(file, 
+        (progress: number, message: string) => {
+          setProcessingProgress(progress);
+          setProcessingMessage(message);
+        },
+        (ready: boolean) => {
+          setReady(ready);
+        }
+      );
       
       if (response) {
         const newDocument = {
@@ -102,6 +107,8 @@ function App() {
       const response: any = await uploadText(textContent, (progress, message) => {
         setProcessingProgress(progress);
         setProcessingMessage(message);
+      }, (ready) => {
+        setReady(ready);
       });
       
       if (response) {
@@ -140,7 +147,7 @@ function App() {
     setError(null);
   };
 
-  return processingProgress === 100 ? (
+  return ready ? (
     <div className="min-h-screen relative overflow-hidden">
       <MainView 
         summary={parsedSummary || []}

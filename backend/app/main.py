@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.document import router as document_router
-from app.api.text import router as text_router
+from app.api.documentUpload import router as document_router
+from app.api.textUpload import router as text_router
 from app.api.chat import router as chat_router
 
 app = FastAPI()

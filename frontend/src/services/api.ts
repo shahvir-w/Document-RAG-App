@@ -11,7 +11,7 @@ const api = axios.create({
 
 const generateUserId = () => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-export const uploadDocument = async (file: File, onProgressUpdate: (progress: number, message: string) => void) => {
+export const uploadDocument = async (file: File, onProgressUpdate: (progress: number, message: string) => void, onReady: (ready: boolean) => void) => {
   const userId = generateUserId();
   const formData = new FormData();
   formData.append('file', file);
@@ -53,6 +53,10 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
             // This is our summary completion message
             currentProgress = 100;
             onProgressUpdate(currentProgress, jsonMessage.status);
+
+            setTimeout(() => {
+              onReady(true);
+            }, 1000);
 
             eventSource.close();
             resolve({
@@ -124,7 +128,7 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
   }
 };
 
-export const uploadText = async (textContent: string, onProgressUpdate: (progress: number, message: string) => void) => {
+export const uploadText = async (textContent: string, onProgressUpdate: (progress: number, message: string) => void, onReady: (ready: boolean) => void) => {
   const userId = generateUserId();
   
   try {
@@ -158,6 +162,11 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
             // This is our summary completion message
             currentProgress = 100;
             onProgressUpdate(currentProgress, jsonMessage.status);
+
+            setTimeout(() => {
+              onReady(true);
+            }, 1000);
+
             eventSource.close();
             resolve({
               ...response.data,
@@ -171,7 +180,12 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
           if (jsonMessage.status && jsonMessage.text) {
             // Store the document text
             documentText = jsonMessage.text;
-            onProgressUpdate(currentProgress + 20, jsonMessage.status);
+            onProgressUpdate(currentProgress, jsonMessage.status);
+
+            setTimeout(() => {
+              onProgressUpdate(currentProgress, "Creating compartments...");
+            }, 2500);
+            
             return;
           }
         } catch (e) {

@@ -45,8 +45,11 @@ def load_documents(file_type: str, data_path: str) -> list[Document]:
             for filename in os.listdir(data_path):
                 if filename.endswith('.txt'):
                     file_path = os.path.join(data_path, filename)
-                    loader = TextLoader(file_path=file_path)
-                    documents.extend(loader.load())
+                    try:
+                        loader = TextLoader(file_path=file_path, encoding='utf-8')
+                        documents.extend(loader.load())
+                    except Exception as e:
+                        print(f"Failed to load {file_path}: {e}")
         elif file_type in ['markdown', 'md']:
             for filename in os.listdir(data_path):
                 if filename.endswith(('.md', '.markdown')):

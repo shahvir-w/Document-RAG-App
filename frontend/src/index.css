@@ -26,6 +26,10 @@
     color: rgba(150, 173, 255);
   }
 
+  .custom-text-background {
+    background: rgba(49, 69, 139, 0.797);
+  }
+
   .custom-border {
     border-bottom: 2px solid rgba(150, 178, 240, 0.7);
   }

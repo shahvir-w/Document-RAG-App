@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from ..tasks.chroma_tasks import query_chroma
+from ..jobs.chroma_tasks import query_chroma
 
 router = APIRouter()
 

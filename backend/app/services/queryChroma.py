@@ -21,15 +21,14 @@ def query_chroma(question: str, user_id: str):
         # Check if the user's Chroma directory exists
         if not os.path.exists(chroma_path):
             return {
-                "answer": "Sorry, I couldn't find your document database. Please upload a document first.",
+                "answer": "Sorry, your session has expired. Please upload a new document.",
                 "sources": []
             }
         
         # Load the Chroma database
         db = Chroma(persist_directory=chroma_path, embedding_function=embeddings)
         retriever = db.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 3} 
+            search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.6}
         )
         
         # Create a custom prompt template
@@ -42,7 +41,7 @@ def query_chroma(question: str, user_id: str):
         
         Question: {question}
         
-        Answer the question based only on the provided context. Be concise and accurate. 
+        Answer the question based only on the provided context. Be concise and accurate. Start your answer with based on source...
         """
         
         prompt = PromptTemplate(

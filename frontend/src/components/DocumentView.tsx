@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FileText, File } from 'lucide-react';
 import { Worker } from '@react-pdf-viewer/core';
 import { Viewer } from '@react-pdf-viewer/core';
@@ -14,6 +14,17 @@ interface DocumentViewProps {
 }
 
 function DocumentView({ text, pdfUrl, highlightedText, setViewMode, viewMode }: DocumentViewProps) {
+  const highlightRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (highlightedText && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [highlightedText]);
+
   const renderHighlightedText = () => {
     if (!highlightedText) return text;
     
@@ -27,7 +38,12 @@ function DocumentView({ text, pdfUrl, highlightedText, setViewMode, viewMode }: 
     return (
       <>
         {before}
-        <mark className="bg-yellow-500/30 text-white">{highlight}</mark>
+        <mark 
+          ref={highlightRef}
+          className="custom-text-background text-zinc-200"
+        >
+          {highlight}
+        </mark>
         {after}
       </>
     );

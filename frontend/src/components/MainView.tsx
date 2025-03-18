@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Upload } from "lucide-react";
 import DocumentView from "./DocumentView";
 import Compartments from "./Compartments";
@@ -32,6 +32,7 @@ export default function MainView({
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [highlightedText, setHighlightedText] = useState<string>("");
   const [viewMode, setViewMode] = useState<'text' | 'pdf'>('text');
+  
 
   console.log(summary);
   console.log(userId);
@@ -106,15 +107,17 @@ export default function MainView({
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
-            {activeTab === "compartments" && <Compartments summary={summary}/>}
-            {activeTab === "chat" && (
+            <div style={{ display: activeTab === "compartments" ? 'block' : 'none', height: '100%' }}>
+              <Compartments summary={summary}/>
+            </div>
+            <div style={{ display: activeTab === "chat" ? 'block' : 'none', height: '100%' }}>
               <Chat 
                 messages={chatMessages}
                 setMessages={setChatMessages}
                 userId={userId}
                 onSourceClick={handleSourceClick}
               />
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ParsedSummary, Compartment as CompartmentType, SubCompartment } from "../services/summaryParse";
 
@@ -8,6 +8,29 @@ type CompartmentsProps = {
 
 function Compartments({ summary }: CompartmentsProps) {
   const [expandedCompartments, setExpandedCompartments] = useState<Record<string, boolean>>({});
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
+  
+  // Save scroll position when scrolling
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      scrollPositionRef.current = scrollContainerRef.current.scrollTop;
+    }
+  };
+  
+  // Restore scroll position on component mount
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = scrollPositionRef.current;
+      
+      // Add scroll event listener
+      container.addEventListener('scroll', handleScroll);
+      return () => {
+        container.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, []);
 
   if (!summary || summary.length === 0) {
     return (
@@ -79,7 +102,11 @@ function Compartments({ summary }: CompartmentsProps) {
   };
 
   return (
-    <div className="h-full overflow-auto p-4 bg-zinc-950 text-zinc-300 custom-scrollbar">
+    <div 
+      ref={scrollContainerRef}
+      className="h-full overflow-auto p-4 bg-zinc-950 text-zinc-300 custom-scrollbar"
+      onScroll={handleScroll}
+    >
       {/* Compartments */}
       <div className="px-4">
         {summary.map((compartment, index) => renderCompartment(compartment, index))}
