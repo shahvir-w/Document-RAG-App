@@ -3,6 +3,7 @@ import { Upload } from "lucide-react";
 import DocumentView from "./DocumentView";
 import Compartments from "./Compartments";
 import Chat from "./Chat";
+import InfoButton from "./InfoButton";
 import { ParsedSummary } from "../services/summaryParse";
 
 interface Message {
@@ -62,13 +63,16 @@ export default function MainView({
           <h1 className="text-xl font-bold leading-tight text-zinc-100">
             {documentTitle}
           </h1>
-          <button 
-            className="border border-zinc-700 rounded px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 transition-colors bg-zinc-950"
-            onClick={onNewDocument}
+          <div className="flex items-center gap-2">
+            <button 
+              className="border border-zinc-700 rounded px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 transition-colors bg-zinc-950"
+              onClick={onNewDocument}
           >
             <Upload className="h-4 w-4" />
             Upload New Document
           </button>
+          <InfoButton />
+          </div>
         </div>
       </div>
       

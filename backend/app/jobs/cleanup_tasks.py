@@ -16,7 +16,7 @@ def cleanup_user_data(user_id: str):
     """Clean up a specific user's data"""
     try:
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
+        print(base_dir)
         # Clean up data directory
         data_path = os.path.join(base_dir, "data", user_id)
         if os.path.exists(data_path):

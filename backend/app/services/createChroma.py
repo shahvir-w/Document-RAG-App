@@ -5,11 +5,12 @@ from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 load_dotenv()
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 def get_user_paths(user_id: str) -> tuple[str, str]:
     """Get the paths for user's data and chroma directories"""
@@ -26,9 +27,16 @@ def create_chroma_db(file_type: str, user_id: str):
         documents = load_documents(file_type, data_path)
         if not documents:
             raise ValueError("No documents found to process")
-            
-        chunks = split_documents(documents, 800, 80)
+        
+        # Check document size
+        num_tokens_total = llm.get_num_tokens(documents[0].page_content)
+        if num_tokens_total > 100000:
+            raise ValueError("Document is too large to process")
+        
+        # Use smaller chunks with more overlap for better retrieval
+        chunks = split_documents(documents, 500, 150)
         add_to_chroma(chunks, chroma_path)
+
         return documents[0].page_content
     except Exception as e:
         raise Exception(f"Error in create_chroma_db: {str(e)}")
@@ -63,8 +71,8 @@ def load_documents(file_type: str, data_path: str) -> list[Document]:
     except Exception as e:
         raise Exception(f"Error loading documents: {str(e)}")
 
-def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80):
-    """Split documents into smaller chunks."""
+def split_documents(documents: list[Document], chunk_size=500, chunk_overlap=150):
+    """Split documents into smaller chunks with more overlap."""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -75,7 +83,12 @@ def split_documents(documents: list[Document], chunk_size=800, chunk_overlap=80)
 
 def add_to_chroma(chunks: list[Document], chroma_path: str):
     """Add document chunks to user's Chroma database."""
-    db = Chroma(persist_directory=chroma_path, embedding_function=embeddings)
+    # Create the Chroma database with a higher search k value
+    db = Chroma(
+        persist_directory=chroma_path, 
+        embedding_function=embeddings,
+        collection_metadata={"hnsw:space": "cosine"}  # Use cosine similarity
+    )
     
     chunks_with_ids = calculate_chunk_ids(chunks)
     existing_items = db.get(include=[])

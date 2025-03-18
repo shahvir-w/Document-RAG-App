@@ -25,7 +25,14 @@ def create_chroma_db(self, file_name: str, file_type: str, task_id: str, user_id
         redis_client.publish(f"progress_channel:{task_id}", json.dumps(text_message))
         return {"success": True, "text": text, "task_id": task_id}
     except Exception as e:
-        error_message = f"Error in Chroma DB creation: {str(e)}"
+        error_message = str(e)
+        
+        # Check for specific error messages
+        if "Document is too large to process" in error_message:
+            error_message = "Document is too large to process."
+        else:
+            error_message = f"Error in Chroma DB creation: {error_message}"
+            
         redis_client.publish(f"progress_channel:{task_id}", 
             json.dumps({"status": "error", "message": error_message}))
         self.request.chain = None
@@ -45,10 +52,18 @@ def create_document_summary(self, file_name: str, file_type: str, task_id: str, 
             "title": title,
             "summary": summary
         }
+
         redis_client.publish(f"progress_channel:{task_id}", json.dumps(completion_message))
         return {"success": True, "summary": summary, "title": title}
     except Exception as e:
-        error_message = f"Error creating compartments: {str(e)}"
+        error_message = str(e)
+        
+        # Use consistent error message formatting with create_chroma_db
+        if "Document is too large to process" in error_message:
+            error_message = "Document is too large to process."
+        else:
+            error_message = f"Error creating compartments: {error_message}"
+            
         redis_client.publish(f"progress_channel:{task_id}", 
             json.dumps({"status": "error", "message": error_message}))
         self.request.chain = None

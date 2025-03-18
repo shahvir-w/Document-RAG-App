@@ -49,6 +49,14 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
         try {
           // Try to parse the message as JSON
           const jsonMessage = JSON.parse(message);
+
+          // Check for error messages first
+          if (jsonMessage.status === "error" && jsonMessage.message) {
+            eventSource.close();
+            reject(new Error(jsonMessage.message));
+            return;
+          }
+
           if (jsonMessage.status && jsonMessage.summary && jsonMessage.title) {
             // This is our summary completion message
             currentProgress = 100;
@@ -122,7 +130,8 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
     if (error.code === 'ECONNABORTED') {
       onProgressUpdate(0, "Server took too long to respond. Please try again.");
     } else {
-      onProgressUpdate(0, "Upload failed");
+      // Pass the specific error message from the server
+      onProgressUpdate(0, "Failed to process the document. Please try again.");
     }
     throw error;
   }
@@ -230,8 +239,10 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
     console.error('Error uploading text:', error);
     if (error.code === 'ECONNABORTED') {
       onProgressUpdate(0, "Server took too long to respond. Please try again.");
+    } else if (error.message === "Document is too large to process.") {
+      onProgressUpdate(0, "Text is too long to process.");
     } else {
-      onProgressUpdate(0, "Text processing failed");
+      onProgressUpdate(0, "Failed to process the text. Please try again.");
     }
     throw error;
   }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Clipboard, X, AlertCircle } from 'lucide-react';
+import InfoButton from './InfoButton';
 
 type LandingPageProps = {
   onFileUpload: (file: File) => void;
@@ -103,6 +104,9 @@ function LandingPage({
       
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 h-screen flex flex-col items-center justify-center text-center">
+        <div className="flex justify-end w-96 l-50">
+          <InfoButton />
+        </div>
         <h1 className="text-5xl font-bold mb-6 text-transparent bg-clip-text whitespace-nowrap">
           <span className="bg-gradient-to-r from-blue-400 from-0% via-indigo-500 via-20% via-blue-600 via-40% via-sky-500 via-60% via-teal-400 via-80% to-purple-500 to-100% inline-block text-transparent bg-clip-text">
             Compartmentalize AI

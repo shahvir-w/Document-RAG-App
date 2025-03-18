@@ -60,12 +60,17 @@ def create_document_summary(file_type: str, user_id: str):
         num_tokens_total = llm.get_num_tokens(documents[0].page_content)
         print(f"Total document size: {num_tokens_total} tokens")
         
-        if num_tokens_total < 6000:
+        # Check document size - use the same limit as createChroma.py
+        if num_tokens_total > 100000:
+            raise ValueError("Document is too large to process")
+            
+        
+        if num_tokens_total < 15000:
             prompt = f"""
             Write a comprehensive and detailed summary of the following text delimited by triple backquotes.
             The summary should be comprehensive and separated into sections/subsections (compartments). It should be in markdown format.
-            Main compartments should have a #heading. Subcompartments should have a ##heading. Do not say that this is a summary.
-            Do not include a title. Only the compartments. Example output structure:
+            Main compartments should have a #heading. Subcompartments should have a ##heading. Do not include ###heading. Only # and ## for headings, - for lists, and ** for bold text. 
+            Do not say that this is a summary. Do not include a title. Only the compartments. Example output structure:
 
             # Abstract 
             This document presents a detailed examination of a meta-analysis article published in the Iranian Journal of Public Health, which investigates the efficacy and side effects of two antiepileptic drugs: levetiracetam (LEV) and carbamazepine (CBZ). 
@@ -110,8 +115,8 @@ def create_document_summary(file_type: str, user_id: str):
         combine_prompt = """
         Write a comprehensive and detailed summary of the following text delimited by triple backquotes.
         The summary should be comprehensive and separated into sections/subsections (compartments). It should be in markdown format.
-        Main compartments should have a #heading. Subcompartments should have a ##heading. Do not say that this is a summary.
-        Do not include a title. Only the compartments. Example output structure:
+        Main compartments should have a #heading. Subcompartments should have a ##heading. Do not include ###heading. Only # and ## for headings, - for lists, and ** for bold text. 
+        Do not say that this is a summary. Do not include a title. Only the compartments. Example output structure:
 
         # Abstract 
         This document presents a detailed examination of a meta-analysis article published in the Iranian Journal of Public Health, which investigates the efficacy and side effects of two antiepileptic drugs: levetiracetam (LEV) and carbamazepine (CBZ). 
@@ -127,7 +132,7 @@ def create_document_summary(file_type: str, user_id: str):
         ## Carbamazepine
         Another commonly prescribed antiepileptic medication with a similar mechanism of action.
 
-        Here is the text to compartmentalize:
+        Here is the text to compartmentalize.:
         ```{text}```
         
         COMPARTMENTS:
@@ -138,7 +143,7 @@ def create_document_summary(file_type: str, user_id: str):
         summary_chain = load_summarize_chain(
             llm=llm, 
             chain_type='map_reduce',
-            verbose=True,
+            verbose=False,
             map_prompt=map_prompt_template,
             combine_prompt=combine_prompt_template,
         )

@@ -82,9 +82,9 @@ function App() {
         console.log("pdfUrl: ", newDocument.pdfUrl);
 
       }
-    } catch (err) {
-      setError("Failed to process the document. Please try again.");
+    } catch (err: any) {
       setIsProcessing(false);
+      setError(err.message);
       console.error(err);
     }
   };
@@ -131,8 +131,8 @@ function App() {
         console.log("summary: ", newDocument.summary);
         console.log("title: ", newDocument.title);
       }
-    } catch (err) {
-      setError("Failed to process the text. Please try again.");
+    } catch (err: any) {
+      setError(err.message);
       setIsProcessing(false);
       console.error(err);
     }
@@ -145,6 +145,7 @@ function App() {
     setProcessingProgress(0);
     setProcessingMessage("");
     setError(null);
+    setReady(false);
   };
 
   return ready ? (
