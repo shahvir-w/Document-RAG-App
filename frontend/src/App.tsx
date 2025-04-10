@@ -84,7 +84,7 @@ function App() {
       }
     } catch (err: any) {
       setIsProcessing(false);
-      setError(err.message);
+      setError(err.message || "Failed to process the document. Please try again.");
       console.error(err);
     }
   };
@@ -132,7 +132,7 @@ function App() {
         console.log("title: ", newDocument.title);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to process the text. Please try again.");
       setIsProcessing(false);
       console.error(err);
     }

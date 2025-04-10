@@ -3,8 +3,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
 import os
-from ..jobs.chroma_tasks import create_chroma_db, create_document_summary
-from ..jobs.cleanup_tasks import schedule_user_cleanup
+from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 import redis
 import json
 from .documentUpload import ensure_user_directories
@@ -31,9 +30,6 @@ async def upload_text(request: TextRequest):
         
         with open(file_location, "w", encoding='utf-8') as f:
             f.write(request.content)
-
-        # Schedule cleanup for this user's data
-        schedule_user_cleanup.delay(request.userId)
 
         # Trigger Celery tasks
         create_chroma_db.apply_async(args=[filename, "txt", task_id, request.userId])

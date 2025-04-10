@@ -104,7 +104,8 @@ function LandingPage({
       
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 h-screen flex flex-col items-center justify-center text-center">
-        <div className="flex justify-end w-96 l-50">
+        
+        <div className="relative left-60">
           <InfoButton />
         </div>
         <h1 className="text-5xl font-bold mb-6 text-transparent bg-clip-text whitespace-nowrap">

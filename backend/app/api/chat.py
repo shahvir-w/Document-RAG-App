@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from ..jobs.chroma_tasks import query_chroma
+from ..tasks.chroma_tasks import query_chroma
 
 router = APIRouter()
 
@@ -15,9 +15,15 @@ async def get_response(request: ChatRequest):
             return {"response": "Unable to process request", "sources": []}
         
         result = query_chroma(request.question, request.userId)
+
+        if result["answer"] == "I don't have enough information in the document to answer this question.":
+            sources = []
+        else:
+            sources = result["sources"]
+
         return {
             "response": result["answer"],
-            "sources": result["sources"]
+            "sources": sources
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

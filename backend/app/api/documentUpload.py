@@ -3,8 +3,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
 import os
-from ..jobs.chroma_tasks import create_chroma_db, create_document_summary
-from ..jobs.cleanup_tasks import schedule_user_cleanup
+from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 import redis
 import json
 
@@ -50,9 +49,6 @@ async def upload_document(
         content_type = file.filename.split(".")[-1].lower()
         if content_type not in ['txt', 'md', 'pdf']:
             raise HTTPException(status_code=400, detail="Unsupported file type")
-
-        # Schedule cleanup for this user's data
-        schedule_user_cleanup.delay(userId)
 
         # Trigger Celery tasks
         create_chroma_db.apply_async(args=[file.filename, content_type, task_id, userId])
