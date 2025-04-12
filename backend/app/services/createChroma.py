@@ -3,18 +3,10 @@ import shutil
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader, UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
-from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 import chromadb
-from chromadb import HttpClient
-from chromadb.config import Settings
-
-load_dotenv()
+from app.config import embeddings, llm
 
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
-
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 def get_user_paths(user_id: str) -> tuple[str, str]:
     """Get the paths for user's data directory"""

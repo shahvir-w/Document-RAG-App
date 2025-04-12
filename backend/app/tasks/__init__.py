@@ -5,7 +5,4 @@ __all__ = [
     'celery_app',
     'create_chroma_db',
     'create_document_summary',
-    'schedule_user_cleanup',
-    'cleanup_user_data',
-    'cleanup_expired_users'
 ] 

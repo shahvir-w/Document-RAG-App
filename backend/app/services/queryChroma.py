@@ -1,11 +1,8 @@
 import chromadb
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
+from app.config import embeddings, llm
 
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 

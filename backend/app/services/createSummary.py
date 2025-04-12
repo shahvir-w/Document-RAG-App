@@ -1,23 +1,11 @@
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
-from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import PromptTemplate
 from app.services.createChroma import load_documents
+from app.config import llm
 
-load_dotenv()
-
-api_key = os.environ.get('OPENAI_API_KEY')
-if not api_key:
-    raise ValueError("OPENAI_API_KEY environment variable is not set or is empty")
-
-embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini") 
-
-CHROMA_PATH = "app/chromaSummary"
-DATA_PATH = "app/data"
 
 def get_user_data_path(user_id: str) -> str:
     """Get the path for user's data directory"""

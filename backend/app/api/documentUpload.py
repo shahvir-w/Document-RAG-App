@@ -14,16 +14,13 @@ def ensure_user_directories(user_id: str) -> tuple[str, str]:
     """Create and return paths for user's data directory"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Create user-specific data directory
     user_data_dir = os.path.join(base_dir, "../data", user_id)
     if os.path.exists(user_data_dir):
-        # Clean up old user files but keep the directory
         for file in os.listdir(user_data_dir):
             os.remove(os.path.join(user_data_dir, file))
     else:
         os.makedirs(user_data_dir, exist_ok=True)
     
-    # No need to manage local Chroma directories anymore
     return user_data_dir, None
 
 @router.post("/upload")
