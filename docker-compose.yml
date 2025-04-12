@@ -1,0 +1,22 @@
+services:
+  chromadb:
+    image: chromadb/chroma:1.0.4
+    volumes:
+      - ./chromadb:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=FALSE
+      - PERSIST_DIRECTORY=/chroma/chroma # this is the default path, change it as needed
+      - ANONYMIZED_TELEMETRY=${ANONYMIZED_TELEMETRY:-TRUE}
+    ports:
+      - 8000:8000
+    networks:
+      - net
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+networks:
+  net:
+    driver: bridge

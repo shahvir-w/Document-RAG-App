@@ -1,27 +1,30 @@
 import os
 import shutil
 from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader, UnstructuredMarkdownLoader
-from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+import chromadb
+from chromadb import HttpClient
+from chromadb.config import Settings
 
 load_dotenv()
+
+chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 def get_user_paths(user_id: str) -> tuple[str, str]:
-    """Get the paths for user's data and chroma directories"""
+    """Get the paths for user's data directory"""
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_path = os.path.join(base_dir, "data", user_id)
-    chroma_path = os.path.join(base_dir, "chroma", user_id)
-    return data_path, chroma_path
+    return data_path, None
 
 def create_chroma_db(file_type: str, user_id: str):
     """Create a Chroma database from document files."""
-    data_path, chroma_path = get_user_paths(user_id)
+    data_path, _ = get_user_paths(user_id)
     
     try:
         documents = load_documents(file_type, data_path)
@@ -33,9 +36,8 @@ def create_chroma_db(file_type: str, user_id: str):
         if num_tokens_total > 100000:
             raise ValueError("Document is too large to process")
         
-        # Use smaller chunks with more overlap for better retrieval
         chunks = split_documents(documents, 500, 150)
-        add_to_chroma(chunks, chroma_path)
+        add_to_chroma(chunks, user_id)
 
         return documents[0].page_content
     except Exception as e:
@@ -81,57 +83,74 @@ def split_documents(documents: list[Document], chunk_size=500, chunk_overlap=150
     )
     return text_splitter.split_documents(documents)
 
-def add_to_chroma(chunks: list[Document], chroma_path: str):
-    """Add document chunks to user's Chroma database."""
-    # Create the Chroma database with a higher search k value
-    db = Chroma(
-        persist_directory=chroma_path, 
-        embedding_function=embeddings,
-        collection_metadata={"hnsw:space": "cosine"}  # Use cosine similarity
-    )
-    
-    chunks_with_ids = calculate_chunk_ids(chunks)
-    existing_items = db.get(include=[])
-    existing_ids = set(existing_items["ids"])
-    
-    new_chunks = [chunk for chunk in chunks_with_ids 
-                 if chunk.metadata["id"] not in existing_ids]
-    
-    if new_chunks:
-        new_chunk_ids = [chunk.metadata["id"] for chunk in new_chunks]
-        db.add_documents(new_chunks, ids=new_chunk_ids)
-        return len(new_chunks)
-    return 0
 
-def calculate_chunk_ids(chunks):
-    """Calculate unique IDs for each document chunk."""
-    # This will create IDs like "data/monopoly.pdf:6:2"
-    # Page Source : Page Number : Chunk Index
-    
-    last_page_id = None
-    current_chunk_index = 0
-    
-    for chunk in chunks:
-        source = chunk.metadata.get("source")
-        page = chunk.metadata.get("page")
-        current_page_id = f"{source}:{page}"
-        
-        # If the page ID is the same as the last one, increment the index.
-        if current_page_id == last_page_id:
-            current_chunk_index += 1
-        else:
-            current_chunk_index = 0
-        
-        # Calculate the chunk ID.
-        chunk_id = f"{current_page_id}:{current_chunk_index}"
-        last_page_id = current_page_id
-        
-        # Add it to the page meta-data.
-        chunk.metadata["id"] = chunk_id
-    
-    return chunks
+def clean_metadata(meta):
+    """Sanitize metadata dict to avoid ChromaDB API issues."""
+    return {
+        k: (str(v) if v is not None and not isinstance(v, (str, int, float, bool)) else v)
+        for k, v in meta.items()
+        if k != "_type"
+    }
 
-def clear_database():
-    """Clear the existing Chroma database."""
-    if os.path.exists(CHROMA_PATH):
-        shutil.rmtree(CHROMA_PATH)
+def add_to_chroma(chunks: list[Document], user_id: str):
+    """Add document chunks to user's Chroma database using native ChromaDB API."""
+    collection_name = f"user_{user_id}_docs"
+    
+    try:
+        try:
+            collection = chroma_client.get_collection(name=collection_name)
+            print(f"Using existing collection: {collection_name}")
+        except Exception as e:
+            print(f"Creating new collection: {collection_name}")
+            collection = chroma_client.create_collection(
+                name=collection_name,
+                metadata={"hnsw:space": "cosine"}
+            )
+        
+        chunk_ids, chunk_texts, chunk_metadatas = [], [], []
+
+        for chunk in chunks:
+            source = chunk.metadata.get("source", "unknown")
+            page = chunk.metadata.get("page", "0")
+            chunk_id = f"{user_id}_{source.replace('/', '_')}_{page}_{len(chunk_texts)}"
+            chunk_text = chunk.page_content
+            metadata = clean_metadata(chunk.metadata)
+            chunk_ids.append(chunk_id)
+            chunk_texts.append(chunk_text)
+            chunk_metadatas.append(metadata)
+
+        if not chunk_texts:
+            print("No chunks to add to ChromaDB")
+            return 0
+
+        try:
+            existing_ids = collection.get()["ids"]
+        except:
+            existing_ids = []
+
+        new_chunk_indices = [i for i, id in enumerate(chunk_ids) if id not in existing_ids]
+
+        if not new_chunk_indices:
+            print("All chunks already exist in the collection")
+            return 0
+
+        new_ids = [chunk_ids[i] for i in new_chunk_indices]
+        new_texts = [chunk_texts[i] for i in new_chunk_indices]
+        new_metadatas = [chunk_metadatas[i] for i in new_chunk_indices]
+
+        # 👉🏽 Embed using OpenAI embeddings directly here
+        new_embeddings = embeddings.embed_documents(new_texts)
+
+        print(f"Adding {len(new_ids)} new chunks to ChromaDB")
+        collection.add(
+            documents=new_texts,
+            metadatas=new_metadatas,
+            ids=new_ids,
+            embeddings=new_embeddings  # 👈🏽 Pass this!
+        )
+        
+        return len(new_ids)
+
+    except Exception as e:
+        print(f"Error in add_to_chroma: {str(e)}")
+        raise Exception(f"Failed to add documents to ChromaDB: {str(e)}")

@@ -11,7 +11,7 @@ redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 router = APIRouter()
 
 def ensure_user_directories(user_id: str) -> tuple[str, str]:
-    """Create and return paths for user's data and chroma directories"""
+    """Create and return paths for user's data directory"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     
     # Create user-specific data directory
@@ -23,11 +23,8 @@ def ensure_user_directories(user_id: str) -> tuple[str, str]:
     else:
         os.makedirs(user_data_dir, exist_ok=True)
     
-    # Create user-specific chroma directory
-    user_chroma_dir = os.path.join(base_dir, "../chroma", user_id)
-    os.makedirs(user_chroma_dir, exist_ok=True)
-    
-    return user_data_dir, user_chroma_dir
+    # No need to manage local Chroma directories anymore
+    return user_data_dir, None
 
 @router.post("/upload")
 async def upload_document(
@@ -36,7 +33,7 @@ async def upload_document(
 ):
     try:
         # Setup user directories
-        user_data_dir, user_chroma_dir = ensure_user_directories(userId)
+        user_data_dir, _ = ensure_user_directories(userId)
         
         document_id = str(uuid.uuid4())
         task_id = str(uuid.uuid4())
