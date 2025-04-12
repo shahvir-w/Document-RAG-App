@@ -128,12 +128,15 @@ export const uploadDocument = async (file: File, onProgressUpdate: (progress: nu
   } catch (error: any) {
     console.error('Error uploading document:', error);
     if (error.code === 'ECONNABORTED') {
-      onProgressUpdate(0, "Server took too long to respond. Please try again.");
+      throw new Error("Server took too long to respond");
+    } else if (error.status === 429) {
+      throw new Error("Rate limit exceeded");
+    } else if (error.message === "Document is too large to process.") {
+      throw new Error("Document is too large to process");
     } else {
       // Pass the specific error message from the server
-      onProgressUpdate(0, "Failed to process the document. Please try again.");
+      throw new Error("Failed to process the document");
     }
-    throw error;
   }
 };
 
@@ -238,13 +241,16 @@ export const uploadText = async (textContent: string, onProgressUpdate: (progres
   } catch (error: any) {
     console.error('Error uploading text:', error);
     if (error.code === 'ECONNABORTED') {
-      onProgressUpdate(0, "Server took too long to respond. Please try again.");
-    } else if (error.message === "Document is too large to process.") {
-      onProgressUpdate(0, "Text is too long to process.");
-    } else {
-      onProgressUpdate(0, "Failed to process the text. Please try again.");
+      throw new Error("Server took too long to respond");
+    } 
+    else if (error.status === 429) {
+      throw new Error("Rate limit exceeded");
     }
-    throw error;
+    else if (error.message === "Document is too large to process.") {
+      throw new Error("Text is too long to process.");
+    } else {
+      throw new Error("Failed to process the text");
+    }
   }
 };
 
@@ -258,9 +264,13 @@ export const getChatResponse = async (question: string, userId: string) => {
       response: response.data.response,
       sources: response.data.sources
     };
-  } catch (error) {
-    console.error('Error getting chat response:', error);
-    throw error;
+  } catch (error: any) {
+    if (error.status === 429) {
+      throw new Error("Rate limit exceeded, please try again later");
+    }
+    else {
+      throw new Error("Failed to process the request");
+    }
   }
 };
 

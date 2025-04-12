@@ -3,7 +3,6 @@ import MainView from './components/MainView';
 import LandingPage from './components/LandingPage';
 import { uploadDocument, uploadText } from './services/api';
 import { parseSummary, ParsedSummary } from './services/summaryParse';
-import { title, summary } from './services/testing';
 
 type DocumentData = {
   id: string;
@@ -83,8 +82,9 @@ function App() {
 
       }
     } catch (err: any) {
+      const errorMessage = err.message || "Failed to process the document";
       setIsProcessing(false);
-      setError(err.message || "Failed to process the document. Please try again.");
+      setError(errorMessage);
       console.error(err);
     }
   };
@@ -132,7 +132,8 @@ function App() {
         console.log("title: ", newDocument.title);
       }
     } catch (err: any) {
-      setError(err.message || "Failed to process the text. Please try again.");
+      const errorMessage = err.message || "Failed to process the text";
+      setError(errorMessage);
       setIsProcessing(false);
       console.error(err);
     }

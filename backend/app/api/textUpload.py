@@ -1,34 +1,38 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
 import redis
 import json
 from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter()
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+limiter = Limiter(key_func=get_remote_address)
 
 class TextRequest(BaseModel):
     content: str
     userId: str
 
 @router.post("/upload-text")
-async def upload_text(request: TextRequest):
+@limiter.limit("10/hour")
+async def upload_text(request: Request, text_request: TextRequest):
     try:
         document_id = str(uuid.uuid4())
         task_id = str(uuid.uuid4())
         
         # Use the content string directly
-        content = request.content
+        content = text_request.content
         
         # Trigger Celery tasks with in-memory content
-        create_chroma_db.apply_async(args=[content, "txt", task_id, request.userId])
-        create_document_summary.apply_async(args=[content, "txt", task_id, request.userId])
+        create_chroma_db.apply_async(args=[content, "txt", task_id, text_request.userId])
+        create_document_summary.apply_async(args=[content, "txt", task_id, text_request.userId])
 
         return {
             "documentId": document_id,
-            "userId": request.userId,
+            "userId": text_request.userId,
             "filename": f"{document_id}_text.txt",
             "taskId": task_id,
         }

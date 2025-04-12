@@ -133,11 +133,12 @@ function Chat({ messages, setMessages, userId, onSourceClick }: ChatProps) {
       // Note: isResponding will be set to false after typing completes
       
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Sorry, I encountered an error processing your request.";
       setMessages(prevMessages => [
         ...prevMessages.slice(0, -1),
         {
           sender: "AI",
-          content: "Sorry, I encountered an error processing your request."
+          content: errorMessage
         }
       ]);
       

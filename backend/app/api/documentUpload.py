@@ -1,26 +1,30 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 import uuid
 import redis
 import json
 from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/upload")
+@limiter.limit("10/hour")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
-    userId: str = Form(...)
+    userId: str = Form(...),
 ):
     try:
         document_id = str(uuid.uuid4())
         task_id = str(uuid.uuid4())
-        
+
         # Read the file content into memory
         content = await file.read()
-        
+
         content_type = file.filename.split(".")[-1].lower()
         if content_type not in ['txt', 'md', 'pdf']:
             raise HTTPException(status_code=400, detail="Unsupported file type")
@@ -35,6 +39,7 @@ async def upload_document(
             "filename": file.filename,
             "taskId": task_id,
         }
+
     except Exception as e:
         redis_client.publish(f"progress_channel:{task_id}", 
             json.dumps({"status": "error", "message": str(e)}))
@@ -51,9 +56,6 @@ async def get_progress(task_id: str):
         
         for message in pubsub.listen():
             if message['type'] == 'message':
-                
                 yield f"data: {message['data'].decode()}\n\n"
 
     return StreamingResponse(event_stream(), media_type='text/event-stream')
-
-
