@@ -5,17 +5,18 @@ from app.services.createChroma import create_chroma_db as create_chroma_db_servi
 from app.services.createSummary import create_document_summary as create_document_summary_service
 from app.services.createSummary import create_title
 from app.services.queryChroma import query_chroma as query_chroma_service
+from typing import Union, Optional
 
 # Redis setup
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 @celery_app.task(bind=True, name='app.tasks.chroma_tasks.create_chroma_db')
-def create_chroma_db(self, file_name: str, file_type: str, task_id: str, user_id: str):
-    """Task to create Chroma DB and notify frontend on progress"""
+def create_chroma_db(self, content: Union[bytes, str], file_type: str, task_id: str, user_id: str):
+    """Task to create Chroma DB from in-memory document content and notify frontend on progress"""
     try:
         redis_client.publish(f"progress_channel:{task_id}", "Splitting text into vectors...")
         
-        text = create_chroma_db_service(file_type, user_id)
+        text = create_chroma_db_service(file_type, user_id, content)
         
         redis_client.publish(f"progress_channel:{task_id}", "Storing vectors...")
         text_message = {
@@ -39,12 +40,12 @@ def create_chroma_db(self, file_name: str, file_type: str, task_id: str, user_id
         raise Exception(error_message)
 
 @celery_app.task(bind=True, name='app.tasks.chroma_tasks.create_document_summary')
-def create_document_summary(self, file_name: str, file_type: str, task_id: str, user_id: str):
-    """Task to create document summary and notify frontend on progress"""
+def create_document_summary(self, content: Union[bytes, str], file_type: str, task_id: str, user_id: str):
+    """Task to create document summary from in-memory content and notify frontend on progress"""
     try:
         redis_client.publish(f"progress_channel:{task_id}", "Creating compartments...")
         
-        summary = create_document_summary_service(file_type, user_id)
+        summary = create_document_summary_service(file_type, content)
         title = create_title(summary)
         
         completion_message = {

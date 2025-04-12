@@ -1,25 +1,19 @@
 import os
-import shutil
-from langchain_community.document_loaders import PyPDFDirectoryLoader, TextLoader, UnstructuredMarkdownLoader
+import io
+import tempfile
+from langchain_community.document_loaders import PyPDFLoader, TextLoader, UnstructuredMarkdownLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 import chromadb
 from app.config import embeddings, llm
+from typing import Union, List, Optional
 
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 
-def get_user_paths(user_id: str) -> tuple[str, str]:
-    """Get the paths for user's data directory"""
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_path = os.path.join(base_dir, "data", user_id)
-    return data_path, None
-
-def create_chroma_db(file_type: str, user_id: str):
-    """Create a Chroma database from document files."""
-    data_path, _ = get_user_paths(user_id)
-    
+def create_chroma_db(file_type: str, user_id: str, content: Union[bytes, str]):
+    """Create a Chroma database from document content in memory."""
     try:
-        documents = load_documents(file_type, data_path)
+        documents = load_document_from_memory(file_type, content)
         if not documents:
             raise ValueError("No documents found to process")
         
@@ -35,29 +29,41 @@ def create_chroma_db(file_type: str, user_id: str):
     except Exception as e:
         raise Exception(f"Error in create_chroma_db: {str(e)}")
 
-def load_documents(file_type: str, data_path: str) -> list[Document]:
-    """Load documents from the user's data directory."""
+def load_document_from_memory(file_type: str, content: Union[bytes, str]) -> list[Document]:
+    """Load documents from in-memory content."""
     documents = []
     
     try:
         if file_type == 'pdf':
-            loader = PyPDFDirectoryLoader(path=data_path, mode="single")
-            documents = loader.load()
+            # For PDFs: use a temporary file
+            if isinstance(content, str):
+                raise ValueError("PDF content must be provided as bytes")
+                
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                temp_file.write(content)
+                temp_path = temp_file.name
+            
+            try:
+                loader = PyPDFLoader(file_path=temp_path)
+                documents = loader.load()
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            
         elif file_type in ['txt', 'text']:
-            for filename in os.listdir(data_path):
-                if filename.endswith('.txt'):
-                    file_path = os.path.join(data_path, filename)
-                    try:
-                        loader = TextLoader(file_path=file_path, encoding='utf-8')
-                        documents.extend(loader.load())
-                    except Exception as e:
-                        print(f"Failed to load {file_path}: {e}")
+            # For text: create Document directly from the string content
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+                
+            documents = [Document(page_content=content, metadata={"source": "text_upload"})]
+            
         elif file_type in ['markdown', 'md']:
-            for filename in os.listdir(data_path):
-                if filename.endswith(('.md', '.markdown')):
-                    file_path = os.path.join(data_path, filename)
-                    loader = UnstructuredMarkdownLoader(file_path)
-                    documents.extend(loader.load())
+            # For markdown: create Document directly with the markdown content
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+                
+            documents = [Document(page_content=content, metadata={"source": "markdown_upload"})]
+            
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
             
@@ -130,7 +136,7 @@ def add_to_chroma(chunks: list[Document], user_id: str):
         new_texts = [chunk_texts[i] for i in new_chunk_indices]
         new_metadatas = [chunk_metadatas[i] for i in new_chunk_indices]
 
-        # 👉🏽 Embed using OpenAI embeddings directly here
+        # Using OpenAI embeddings directly here
         new_embeddings = embeddings.embed_documents(new_texts)
 
         print(f"Adding {len(new_ids)} new chunks to ChromaDB")
@@ -138,7 +144,7 @@ def add_to_chroma(chunks: list[Document], user_id: str):
             documents=new_texts,
             metadatas=new_metadatas,
             ids=new_ids,
-            embeddings=new_embeddings  # 👈🏽 Pass this!
+            embeddings=new_embeddings
         )
         
         return len(new_ids)

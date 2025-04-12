@@ -2,26 +2,12 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
-import os
-from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 import redis
 import json
+from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 router = APIRouter()
-
-def ensure_user_directories(user_id: str) -> tuple[str, str]:
-    """Create and return paths for user's data directory"""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    user_data_dir = os.path.join(base_dir, "../data", user_id)
-    if os.path.exists(user_data_dir):
-        for file in os.listdir(user_data_dir):
-            os.remove(os.path.join(user_data_dir, file))
-    else:
-        os.makedirs(user_data_dir, exist_ok=True)
-    
-    return user_data_dir, None
 
 @router.post("/upload")
 async def upload_document(
@@ -29,24 +15,19 @@ async def upload_document(
     userId: str = Form(...)
 ):
     try:
-        # Setup user directories
-        user_data_dir, _ = ensure_user_directories(userId)
-        
         document_id = str(uuid.uuid4())
         task_id = str(uuid.uuid4())
         
-        # Save the uploaded file
-        file_location = os.path.join(user_data_dir, f"{document_id}_{file.filename}")
-        with open(file_location, "wb") as buffer:
-            buffer.write(await file.read())
-
+        # Read the file content into memory
+        content = await file.read()
+        
         content_type = file.filename.split(".")[-1].lower()
         if content_type not in ['txt', 'md', 'pdf']:
             raise HTTPException(status_code=400, detail="Unsupported file type")
 
-        # Trigger Celery tasks
-        create_chroma_db.apply_async(args=[file.filename, content_type, task_id, userId])
-        create_document_summary.apply_async(args=[file.filename, content_type, task_id, userId])
+        # Trigger Celery tasks with in-memory content
+        create_chroma_db.apply_async(args=[content, content_type, task_id, userId])
+        create_document_summary.apply_async(args=[content, content_type, task_id, userId])
 
         return {
             "documentId": document_id,

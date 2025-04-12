@@ -3,14 +3,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import PromptTemplate
-from app.services.createChroma import load_documents
+from typing import Union, List
 from app.config import llm
-
-
-def get_user_data_path(user_id: str) -> str:
-    """Get the path for user's data directory"""
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_dir, "data", user_id)
 
 def create_title(summary: str):
     prompt = f"""
@@ -34,13 +28,16 @@ def create_documents(documents: list[Document], chunk_size=10000, chunk_overlap=
     )
     return text_splitter.split_documents(documents)
 
-def create_document_summary(file_type: str, user_id: str):
-    """Create a summarized version of the documents."""
+def create_document_summary(file_type: str, content: Union[bytes, str]):
+    """Create a summarized version of the document from in-memory content."""
     print(f"Creating document summary for {file_type}")
     try:
-        data_path = get_user_data_path(user_id)
-        documents = load_documents(file_type, data_path)
-        print(f"Loaded {len(documents)} documents")
+        # Import here to avoid circular imports
+        from app.services.createChroma import load_document_from_memory
+        
+        # Use the common document loading function for all file types
+        documents = load_document_from_memory(file_type, content)
+        print(f"Loaded document")
         
         if not documents:
             return "No documents found to summarize."
@@ -147,15 +144,3 @@ def create_document_summary(file_type: str, user_id: str):
     except Exception as e:
         print(f"Error creating document summary: {e}")
         return f"Error creating summary: {str(e)}"
-
-
-def main():
-    try:
-        summary = create_document_summary('txt', 'test_user')
-        print("\nSummary:")
-        print(summary)
-    except Exception as e:
-        print(f"Error in main function: {e}")
-
-if __name__ == "__main__":
-    main()

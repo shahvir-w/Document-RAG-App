@@ -2,11 +2,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
-import os
-from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 import redis
 import json
-from .documentUpload import ensure_user_directories
+from ..tasks.chroma_tasks import create_chroma_db, create_document_summary
 
 router = APIRouter()
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -18,27 +16,20 @@ class TextRequest(BaseModel):
 @router.post("/upload-text")
 async def upload_text(request: TextRequest):
     try:
-        # Setup user directories
-        user_data_dir, user_chroma_dir = ensure_user_directories(request.userId)
-        
         document_id = str(uuid.uuid4())
         task_id = str(uuid.uuid4())
         
-        # Create filename and save content
-        filename = f"{document_id}_text.txt"
-        file_location = os.path.join(user_data_dir, filename)
+        # Use the content string directly
+        content = request.content
         
-        with open(file_location, "w", encoding='utf-8') as f:
-            f.write(request.content)
-
-        # Trigger Celery tasks
-        create_chroma_db.apply_async(args=[filename, "txt", task_id, request.userId])
-        create_document_summary.apply_async(args=[filename, "txt", task_id, request.userId])
+        # Trigger Celery tasks with in-memory content
+        create_chroma_db.apply_async(args=[content, "txt", task_id, request.userId])
+        create_document_summary.apply_async(args=[content, "txt", task_id, request.userId])
 
         return {
             "documentId": document_id,
             "userId": request.userId,
-            "filename": filename,
+            "filename": f"{document_id}_text.txt",
             "taskId": task_id,
         }
     except Exception as e:
