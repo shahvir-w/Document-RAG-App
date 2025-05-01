@@ -13,7 +13,7 @@ A modern document processing and retrieval application built with React, FastAPI
 
 ## Demo
 
-https://github.com/shahvir-w/Document-RAG-App/blob/main/media/demo.mp4
+https://github.com/user-attachments/assets/19714923-1e17-4a43-b5b1-3db9cdabee52
 
 ## Tech Stack
 
