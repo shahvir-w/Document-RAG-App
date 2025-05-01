@@ -17,15 +17,18 @@ def create_chroma_db(file_type: str, user_id: str, content: Union[bytes, str]):
         if not documents:
             raise ValueError("No documents found to process")
         
+        # Combine all pages' content
+        full_text = "\n\n".join(doc.page_content for doc in documents)
+        
         # Check document size
-        num_tokens_total = llm.get_num_tokens(documents[0].page_content)
+        num_tokens_total = llm.get_num_tokens(full_text)
         if num_tokens_total > 100000:
             raise ValueError("Document is too large to process")
         
         chunks = split_documents(documents, 500, 150)
         add_to_chroma(chunks, user_id)
 
-        return documents[0].page_content
+        return full_text
     except Exception as e:
         raise Exception(f"Error in create_chroma_db: {str(e)}")
 

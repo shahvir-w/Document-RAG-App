@@ -42,14 +42,15 @@ def create_document_summary(file_type: str, content: Union[bytes, str]):
         if not documents:
             return "No documents found to summarize."
         
-        num_tokens_total = llm.get_num_tokens(documents[0].page_content)
+        # Combine all pages' content
+        full_text = "\n\n".join(doc.page_content for doc in documents)
+        num_tokens_total = llm.get_num_tokens(full_text)
         print(f"Total document size: {num_tokens_total} tokens")
         
         # Check document size - use the same limit as createChroma.py
         if num_tokens_total > 100000:
             raise ValueError("Document is too large to process")
             
-        
         if num_tokens_total < 15000:
             prompt = f"""
             Write a comprehensive and detailed summary of the following text delimited by triple backquotes.
@@ -72,7 +73,7 @@ def create_document_summary(file_type: str, content: Union[bytes, str]):
             Another commonly prescribed antiepileptic medication with a similar mechanism of action.
 
             Here is the text to compartmentalize.:
-            ```{documents[0].page_content}```
+            ```{full_text}```
             """
             summary = llm.invoke(prompt)
             return summary.content
@@ -81,8 +82,9 @@ def create_document_summary(file_type: str, content: Union[bytes, str]):
         chunk_overlap = chunk_size // 10
         print(f"Using chunk size: {chunk_size}, chunk overlap: {chunk_overlap}")
         
-        # Split documents into chunks
-        docs = create_documents(documents, chunk_size, chunk_overlap)
+        # Create a single document with all content for chunking
+        full_document = Document(page_content=full_text, metadata={"source": "full_document"})
+        docs = create_documents([full_document], chunk_size, chunk_overlap)
         print(f"Split into {len(docs)} chunks")
         
         # Get token count of first document
