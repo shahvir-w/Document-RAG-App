@@ -41,7 +41,7 @@ function InfoButton() {
                 <h3 className="text-lg text-left font-medium text-zinc-200 mb-2">How It Works</h3>
                 <p className="text-zinc-400 text-sm text-left">
                   Compartmentalize AI breaks down your documents into structured sections, 
-                  allowing for better understanding. The app also employs Retrieval Augmented Generation (RAG) - 
+                  allowing for better understanding. The app employs Retrieval Augmented Generation - 
                   when you chat with the AI, it references the specific sections of your document to provide
                   accurate responses.
                 
@@ -51,7 +51,7 @@ function InfoButton() {
               <div>
                 <h3 className="text-lg text-left font-medium text-zinc-200 mb-2">Privacy Information</h3>
                 <p className="text-zinc-400 text-sm text-left">
-                  Your documents are stored only for a few minutes to convert them into vectors, which are then stored in a database for up to 1 hour.
+                  Your documents are converted into vectors and stored in a database for up to 1 hour.
                   We use OpenAI's embedding API to convert your documents into vectors and OpenAI's chat completion API to answer questions.
                 </p>
               </div>

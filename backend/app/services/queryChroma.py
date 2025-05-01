@@ -1,5 +1,5 @@
 import chromadb
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores.chroma import Chroma
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from app.config import embeddings, llm
@@ -59,7 +59,7 @@ def query_chroma(question: str, user_id: str):
             chain_type_kwargs={"prompt": prompt}
         )
 
-        result = qa_chain({"query": question})
+        result = qa_chain.invoke({"query": question})
 
         sources = []
         seen = set()
