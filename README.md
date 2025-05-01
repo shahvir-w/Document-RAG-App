@@ -11,6 +11,10 @@ A modern document processing and retrieval application built with React, FastAPI
 - 💬 interactive chat interface
 - 📝 document summarization (compartmentalization)
 
+## Demo
+
+https://github.com/shahvir-w/Document-RAG-App/blob/main/media/demo.mp4
+
 ## Tech Stack
 
 ### Frontend
